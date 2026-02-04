@@ -1,0 +1,17 @@
+{
+  "name": "@obsidian-plugin-toolkit/jon-dez",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
+  "funding": "https://github.com/sponsors/jon-dez",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0"
+  },
+  "packageManager": "yarn@4.12.0"
+}

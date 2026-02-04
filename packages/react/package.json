@@ -1,0 +1,56 @@
+{
+  "name": "@obsidian-plugin-toolkit/react",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
+  "homepage": "https://github.com/jon-dez/obsidian-plugin-toolkit/tree/main/packages/react#readme",
+  "funding": "https://github.com/sponsors/jon-dez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jon-dez/obsidian-plugin-toolkit.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/jon-dez/obsidian-plugin-toolkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*/index.d.ts",
+      "import": "./dist/*/index.js"
+    }
+  },
+  "sideEffects": [
+    "./dist/chunk-*"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "clean": "rm -rf dist && rm -rf node_modules"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "obsidian": "^1.11.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

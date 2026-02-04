@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "@obsidian-plugin-toolkit/demo-plugin",
+  "license": "MIT",
+  "version": "0.0.0",
+  "funding": "https://github.com/sponsors/jon-dez",
+  "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
+  "scripts": {
+    "build": "yarn run -T tsx esbuild.config.mts",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
+    "@obsidian-plugin-toolkit/esbuild": "workspace:*",
+    "@obsidian-plugin-toolkit/react": "workspace:*",
+    "@types/node": "^25.2.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.27.2",
+    "obsidian": "^1.11.4",
+    "react": "18",
+    "react-dom": "18",
+    "tslib": "^2.8.1"
+  }
+}
