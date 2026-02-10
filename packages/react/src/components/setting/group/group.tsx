@@ -2,7 +2,17 @@ import { Setting as ObsidianSetting, SettingGroup } from 'obsidian';
 import { ReactNode, useEffect, useMemo } from 'react';
 import { SettingGroupContext } from '../../../context/setting';
 import { createPortal } from 'react-dom';
-import { useComponentContainer } from 'src/providers/container';
+import { ContainerProvider, useComponentContainer } from 'src/providers/container';
+
+declare module "obsidian" {
+  interface SettingGroup {
+    groupEl: HTMLElement;
+    controlEl: HTMLElement;
+    headerEl: HTMLElement;
+    headerInnerEl: HTMLElement;
+    listEl: HTMLElement;
+  }
+}
 
 export function Group({
   children,
@@ -22,6 +32,13 @@ export function Group({
 
   useEffect(() => {
     if (!settingGroup) return;
+    return () => {
+      settingGroup.group.groupEl.remove();
+    };
+  }, [settingGroup]);
+
+  useEffect(() => {
+    if (!settingGroup) return;
     if (heading) {
       settingGroup.group.setHeading(heading);
     }
@@ -38,9 +55,12 @@ export function Group({
   }, [settingGroup]);
 
   if (!value) return undefined;
-  return (
-    <SettingGroupContext.Provider value={value}>
-      {createPortal(children, value.containerEl)}
-    </SettingGroupContext.Provider>
-  );
+  return createPortal(
+    <ContainerProvider containerEl={value.containerEl}>
+      <SettingGroupContext.Provider value={value}>
+        {children}
+      </SettingGroupContext.Provider>
+    </ContainerProvider>,
+    value.containerEl,
+  )
 }

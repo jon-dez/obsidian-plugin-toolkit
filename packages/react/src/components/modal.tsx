@@ -16,10 +16,16 @@ export function Modal({
   modalProps,
   children,
   onClose,
+  slots,
 }: {
   modalProps: ModalProps;
   open: boolean;
   children: ReactNode;
+  slots?: {
+    modalEl?: {
+      className?: string;
+    }
+  }
   onClose: () => void;
 }) {
   const modal = useMemo(() => {
@@ -41,9 +47,20 @@ export function Modal({
     }
   }, [modal, open]);
 
-  return (
+  useEffect(() => {
+    if (slots?.modalEl?.className) {
+      modal.modalEl.addClass(slots.modalEl.className);
+    }
+  }, [modal, slots?.modalEl]);
+
+  if (!open) {
+    return null;
+  }
+
+  return createPortal(
     <ContainerProvider containerEl={modal.contentEl}>
-      {createPortal(children, modal.contentEl)}
-    </ContainerProvider>
+      {children}
+    </ContainerProvider>,
+    modal.contentEl,
   );
 }

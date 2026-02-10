@@ -18,5 +18,5 @@
     "rootDir": "src"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/react-obsidian" }]
+  "references": [{ "path": "../../packages/react" }]
 }
