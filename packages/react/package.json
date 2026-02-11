@@ -1,6 +1,6 @@
 {
   "name": "@obsidian-plugin-toolkit/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
   "homepage": "https://github.com/jon-dez/obsidian-plugin-toolkit/tree/main/packages/react#readme",

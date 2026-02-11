@@ -1,6 +1,6 @@
 {
   "name": "@obsidian-plugin-toolkit/esbuild",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Esbuild plugins and utilities for Obsidian plugins",
   "license": "MIT",
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
