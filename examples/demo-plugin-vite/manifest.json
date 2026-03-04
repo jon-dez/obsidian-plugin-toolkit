@@ -1,0 +1,10 @@
+{
+  "id": "@obsidian-plugin-toolkit/demo-plugin-vite",
+  "name": "Demo plugin for @obsidian-plugin-toolkit/demo-plugin-vite",
+  "version": "0.0.0",
+  "description": "A demo plugin for @obsidian-plugin-toolkit/demo-plugin-vite",
+  "author": "jon-dez",
+  "authorUrl": "https://github.com/jon-dez",
+  "fundingUrl": "https://github.com/sponsors/jon-dez",
+  "isDesktopOnly": false
+}
