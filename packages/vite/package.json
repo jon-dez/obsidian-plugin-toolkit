@@ -1,0 +1,64 @@
+{
+  "name": "@obsidian-plugin-toolkit/vite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vite plugins and utilities for Obsidian plugins with React Fast Refresh",
+  "license": "MIT",
+  "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
+  "homepage": "https://github.com/jon-dez/obsidian-plugin-toolkit/tree/main/packages/vite#readme",
+  "funding": "https://github.com/jon-dez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jon-dez/obsidian-plugin-toolkit.git",
+    "directory": "packages/vite"
+  },
+  "bugs": {
+    "url": "https://github.com/jon-dez/obsidian-plugin-toolkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./hmr/obsidian-shim": {
+      "types": "./dist/hmr/obsidian-shim.d.ts",
+      "import": "./dist/hmr/obsidian-shim.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "esbuild": "*",
+    "react": "18",
+    "react-dom": "18",
+    "vite": ">=5"
+  },
+  "devDependencies": {
+    "es-module-lexer": "^2.0.0",
+    "esbuild": "^0.24.0",
+    "magic-string": "^0.30.21",
+    "obsidian": "^1.11.4",
+    "react": "18",
+    "react-dom": "18",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@babel/preset-typescript": "^7.28.5"
+  }
+}
