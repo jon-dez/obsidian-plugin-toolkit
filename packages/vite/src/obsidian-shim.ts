@@ -8,28 +8,40 @@
  * Origin is injected at build time via __VITE_DEV_ORIGIN__.
  */
 
+import * as obsidian from 'obsidian';
+import path from 'path';
+import { createRoot, Root } from 'react-dom/client';
+import { createElement } from 'react';
+import { DevelopmentModeUI, type DevServerStore } from './ui';
+export * from 'obsidian';
+
 declare const __VITE_DEV_ORIGIN__: string;
 
 const origin = __VITE_DEV_ORIGIN__;
 
-import * as obsidian from 'obsidian';
-export * from 'obsidian';
+const devComponentClass = 'vite-obsidian-dev-component';
 
 interface DevPluginLike {
   app: obsidian.App;
   manifest: { id: string };
 }
 
-function createDevStore(
-  plugin: DevPluginLike,
-): typeof globalThis.__VITE_DEV_STORE__ {
+function createDevStore(plugin: DevPluginLike): DevServerStore {
   const url = new URL(origin);
   const listeners = new Set<() => void>();
-  const state = {
-    connectionStatus: 'connected' as const,
+  let state: ReturnType<DevServerStore['getServer']> = {
+    connectionStatus: 'connected',
     url,
-    disconnect() {},
-    connect() {},
+    disconnect() {
+      if (state.connectionStatus === 'disconnected') return;
+      state = { ...state, connectionStatus: 'disconnected' };
+      notify();
+    },
+    connect() {
+      if (state.connectionStatus === 'connected') return;
+      state = { ...state, connectionStatus: 'connected' };
+      notify();
+    },
     reloadPlugin() {
       const { app, manifest } = plugin;
       app.plugins.disablePlugin(manifest.id).then(() => {
@@ -37,17 +49,24 @@ function createDevStore(
       });
     },
   };
+
+  const notify = () => {
+    for (const cb of listeners) cb();
+  };
+
   return {
     getServer: () => state,
-    // subscribe(cb: () => void) {
-    //   throw new Error('Not implemented');
-    //   // listeners.add(cb);
-    //   // return () => listeners.delete(cb);
-    // },
+    subscribe(cb: () => void) {
+      listeners.add(cb);
+      return () => {
+        listeners.delete(cb);
+      };
+    },
   };
 }
 
 export class Plugin extends obsidian.Plugin {
+  dev?: DevPlugin;
   async onload() {
     console.log('Plugin loaded', { plugin: this });
     await super.onload();
@@ -57,11 +76,21 @@ export class Plugin extends obsidian.Plugin {
 class DevPlugin extends obsidian.Plugin {
   #inner?: obsidian.Plugin;
   readonly #innerPromise: Promise<obsidian.Plugin>;
+  #devModeUI = new WeakMap<obsidian.PluginSettingTab, DevModeUI>();
 
   constructor(...args: ConstructorParameters<typeof obsidian.Plugin>) {
     super(...args);
     this.#innerPromise = DevPlugin.load(this).then((PluginClass) => {
       const inner = (this.#inner = new PluginClass(...args));
+
+      const originalAddSettingTab = inner.addSettingTab;
+
+      inner.addSettingTab = (...args: Parameters<typeof originalAddSettingTab>) => {
+        this.addSettingTab(...args);
+        // originalAddSettingTab.apply(inner, args);
+      };
+
+
       return inner;
     });
   }
@@ -135,8 +164,83 @@ class DevPlugin extends obsidian.Plugin {
     // this.#innerPromise = undefined;
     super.onunload();
   }
+
+  override addSettingTab(settingTab: obsidian.PluginSettingTab): void {
+    const store = globalThis.__VITE_DEV_STORE__ as DevServerStore | undefined;
+    if (!store || this.#devModeUI.has(settingTab)) {
+      return super.addSettingTab(settingTab);
+    }
+
+    const devModeUI = new DevModeUI(this, settingTab, store);
+    this.#devModeUI.set(settingTab, devModeUI);
+    this.register(() => {
+      devModeUI.hide();
+      this.#devModeUI.delete(settingTab);
+    });
+
+    return super.addSettingTab(settingTab);
+  }
 }
 
 const devEntryPath = '/src/main.ts';
 
 export default DevPlugin;
+
+class DevModeUI {
+  #rootEl?: HTMLElement;
+  #root?: Root;
+
+  constructor(
+    public plugin: obsidian.Plugin,
+    public settingTab: obsidian.PluginSettingTab,
+    public store: DevServerStore,
+  ) {
+    const originalDisplay = settingTab.display;
+    settingTab.display = () => {
+      originalDisplay.apply(settingTab);
+      this.display();
+    };
+
+    const originalHide = settingTab.hide;
+    settingTab.hide = () => {
+      this.hide();
+      originalHide.apply(settingTab);
+    };
+  }
+
+  display() {
+    const { settingTab, plugin, store } = this;
+    const parentEl = settingTab.containerEl.ownerDocument.body;
+    if (!parentEl) {
+      return;
+    }
+
+    this.hide();
+
+    const root = (this.#root = createRoot(
+      (this.#rootEl = parentEl.createDiv({
+        cls: devComponentClass,
+        attr: {
+          style:
+            'position: absolute; display: block; bottom: 0; right: 0; z-index: calc(var(--layer-modal) + 1);',
+          'data-plugin-id': plugin.manifest.id,
+        },
+      })),
+    ));
+
+    root.render(
+      createElement(DevelopmentModeUI, {
+        store,
+        settingTab,
+      }),
+    );
+  }
+
+  hide() {
+    this.#rootEl?.remove();
+    this.#rootEl = undefined;
+    this.#root?.unmount();
+    this.#root = undefined;
+  }
+}
+
