@@ -5,19 +5,29 @@
  * 3) Connect to Vite's HMR client.
  * 4) Dynamically import the actual plugin entry from the Vite dev server and export it.
  *
- * Origin is injected at build time via __VITE_DEV_ORIGIN__.
+ * Dev config is injected at build time via __VITE_DEV__ (JSON).
  */
 
 import * as obsidian from 'obsidian';
-import path from 'path';
-import { createRoot, Root } from 'react-dom/client';
-import { createElement } from 'react';
-import { DevelopmentModeUI, type DevServerStore } from './ui';
+import type { DevLogEntry, DevServerStore } from './ui';
+import { virtual } from './const/plugins';
 export * from 'obsidian';
 
-declare const __VITE_DEV_ORIGIN__: string;
+/** Injected at build time; parsed once and assigned to globalThis.__VITE_DEV__. */
+declare const __VITE_DEV__: typeof globalThis.__VITE_DEV__;
 
-const origin = __VITE_DEV_ORIGIN__;
+function initViteDev(): NonNullable<typeof globalThis.__VITE_DEV__> {
+  const g = globalThis as typeof globalThis & { __VITE_DEV__?: typeof globalThis.__VITE_DEV__ };
+  if (g.__VITE_DEV__ && typeof g.__VITE_DEV__.origin === 'string') {
+    return g.__VITE_DEV__;
+  }
+  console.log('__VITE_DEV__', __VITE_DEV__);
+  g.__VITE_DEV__ = __VITE_DEV__;
+  return __VITE_DEV__;
+}
+
+const viteDev = initViteDev();
+const origin = viteDev.origin;
 
 const devComponentClass = 'vite-obsidian-dev-component';
 
@@ -30,18 +40,14 @@ function createDevStore(plugin: DevPluginLike): DevServerStore {
   const url = new URL(origin);
   const listeners = new Set<() => void>();
   let state: ReturnType<DevServerStore['getServer']> = {
-    connectionStatus: 'connected',
     url,
-    disconnect() {
-      if (state.connectionStatus === 'disconnected') return;
-      state = { ...state, connectionStatus: 'disconnected' };
-      notify();
-    },
-    connect() {
-      if (state.connectionStatus === 'connected') return;
-      state = { ...state, connectionStatus: 'connected' };
-      notify();
-    },
+    lastEvent: null,
+    lastError: null,
+    mode: viteDev.mode,
+    origin,
+    outDir: viteDev.outDir,
+    nodeVersion: viteDev.nodeVersion,
+    logs: [],
     reloadPlugin() {
       const { app, manifest } = plugin;
       app.plugins.disablePlugin(manifest.id).then(() => {
@@ -54,6 +60,13 @@ function createDevStore(plugin: DevPluginLike): DevServerStore {
     for (const cb of listeners) cb();
   };
 
+  const update = (
+    partial: Partial<Omit<ReturnType<DevServerStore['getServer']>, 'reloadPlugin'>>,
+  ) => {
+    state = { ...state, ...partial };
+    notify();
+  };
+
   return {
     getServer: () => state,
     subscribe(cb: () => void) {
@@ -61,6 +74,19 @@ function createDevStore(plugin: DevPluginLike): DevServerStore {
       return () => {
         listeners.delete(cb);
       };
+    },
+    setError(error) {
+      update({ lastError: error });
+    },
+    setLastEvent(info) {
+      update({ lastEvent: info });
+    },
+    appendLog(entry: DevLogEntry) {
+      const maxLogs = 50;
+      const nextLogs = [...state.logs, entry];
+      update({
+        logs: nextLogs.slice(-maxLogs),
+      });
     },
   };
 }
@@ -115,7 +141,18 @@ class DevPlugin extends obsidian.Plugin {
 
     await import(/* @vite-ignore */ new URL('@vite/client', url).toString());
 
-    globalThis.__VITE_DEV_STORE__ ??= createDevStore(plugin);
+    try {
+      await import(
+        /* @vite-ignore */ new URL(virtual.hmrLogger, url).toString()
+      );
+    } catch (error) {
+      console.warn('Failed to load Vite HMR logger from dev server.', error);
+    }
+
+    const store =
+      viteDev.store ??
+      createDevStore(plugin);
+    viteDev.store = store;
     globalThis.__obsidian__ = { ...obsidian, Plugin };
 
     const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
@@ -166,7 +203,7 @@ class DevPlugin extends obsidian.Plugin {
   }
 
   override addSettingTab(settingTab: obsidian.PluginSettingTab): void {
-    const store = globalThis.__VITE_DEV_STORE__ as DevServerStore | undefined;
+    const store = viteDev.store;
     if (!store || this.#devModeUI.has(settingTab)) {
       return super.addSettingTab(settingTab);
     }
@@ -188,7 +225,7 @@ export default DevPlugin;
 
 class DevModeUI {
   #rootEl?: HTMLElement;
-  #root?: Root;
+  #unmount?: () => void;
 
   constructor(
     public plugin: obsidian.Plugin,
@@ -217,30 +254,50 @@ class DevModeUI {
 
     this.hide();
 
-    const root = (this.#root = createRoot(
-      (this.#rootEl = parentEl.createDiv({
-        cls: devComponentClass,
-        attr: {
-          style:
-            'position: absolute; display: block; bottom: 0; right: 0; z-index: calc(var(--layer-modal) + 1);',
-          'data-plugin-id': plugin.manifest.id,
-        },
-      })),
-    ));
+    const container = (this.#rootEl = parentEl.createDiv({
+      cls: devComponentClass,
+      attr: {
+        style:
+          'position: absolute; display: block; bottom: 0; right: 0; z-index: calc(var(--layer-modal) + 1);',
+        'data-plugin-id': plugin.manifest.id,
+      },
+    }));
 
-    root.render(
-      createElement(DevelopmentModeUI, {
-        store,
-        settingTab,
-      }),
-    );
+    const server = store.getServer();
+
+    (async () => {
+      try {
+        const devUiUrl = new URL(virtual.devUi, server.url);
+        const mod = await import(
+          /* @vite-ignore */ devUiUrl.toString()
+        );
+        const mountDevUi: ((options: {
+          container: HTMLElement;
+          store: DevServerStore;
+          settingTab: obsidian.PluginSettingTab;
+        }) => () => void) =
+          (mod as any).mountDevUi ?? (mod as any).default;
+
+        if (typeof mountDevUi === 'function') {
+          this.#unmount = mountDevUi({
+            container,
+            store,
+            settingTab,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load Vite dev UI from dev server.', error);
+      }
+    })();
   }
 
   hide() {
+    if (this.#unmount) {
+      this.#unmount();
+      this.#unmount = undefined;
+    }
     this.#rootEl?.remove();
     this.#rootEl = undefined;
-    this.#root?.unmount();
-    this.#root = undefined;
   }
 }
 

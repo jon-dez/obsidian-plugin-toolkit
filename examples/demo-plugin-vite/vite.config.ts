@@ -15,6 +15,6 @@ export default defineConfig(async () => {
     },
     alias: {
       src: path.resolve(__dirname, './src'),
-    }
+    },
   });
 });

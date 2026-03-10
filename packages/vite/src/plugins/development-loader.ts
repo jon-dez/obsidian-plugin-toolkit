@@ -21,7 +21,7 @@ export interface DevelopmentLoaderOptions {
 
 // In the published package, the shim is built as ESM at dist/hmr/obsidian-shim.js.
 // We bundle that with Vite into a CJS dev loader for Obsidian.
-const defaultShimPath = path.resolve(__dirname, 'hmr', 'obsidian-shim.js');
+const defaultShimPath = path.resolve(__dirname, 'dev', 'obsidian-shim.js');
 
 const DEFAULT_ORIGIN = 'http://localhost:5173';
 
@@ -44,7 +44,12 @@ async function writeDevelopmentLoader(
     configFile: false,
     root: path.dirname(shimPath),
     define: {
-      __VITE_DEV_ORIGIN__: JSON.stringify(origin),
+      __VITE_DEV__: {
+        origin,
+        mode: process.env.NODE_ENV ?? 'development',
+        outDir: outdir,
+        nodeVersion: process.version,
+      },
     },
     build: {
       outDir: outdir,

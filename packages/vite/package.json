@@ -31,9 +31,17 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./hmr/obsidian-shim": {
-      "types": "./dist/hmr/obsidian-shim.d.ts",
-      "import": "./dist/hmr/obsidian-shim.js"
+    "./dev/obsidian-shim": {
+      "types": "./dist/dev/obsidian-shim.d.ts",
+      "import": "./dist/dev/obsidian-shim.js"
+    },
+    "./dev/hmr-logger": {
+      "types": "./dist/dev/hmr-logger.d.ts",
+      "import": "./dist/dev/hmr-logger.js"
+    },
+    "./dev/ui": {
+      "types": "./dist/dev/ui.d.ts",
+      "import": "./dist/dev/ui.js"
     }
   },
   "scripts": {

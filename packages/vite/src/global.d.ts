@@ -1,15 +1,11 @@
 declare global {
   var __obsidian__: typeof import('obsidian');
-  var __VITE_DEV_ORIGIN__: string;
-  var __VITE_DEV_STORE__: {
-    getServer: () => {
-      connectionStatus: 'connecting' | 'connected' | 'disconnected';
-      url: URL;
-      disconnect: () => void;
-      connect: () => void;
-      reloadPlugin: () => void;
-    };
-    subscribe: (callback: () => void) => () => void;
+  var __VITE_DEV__: {
+    origin: string;
+    mode: string;
+    outDir: string;
+    nodeVersion: string;
+    store?: import('./ui').DevServerStore;
   };
   var $RefreshReg$: () => void;
   var $RefreshSig$: (type: unknown) => unknown;
