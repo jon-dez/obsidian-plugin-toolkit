@@ -1,7 +1,7 @@
 import path from 'path';
 import { copyFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'node:url';
-import type { Plugin } from 'vite';
+import type { Plugin, ResolvedServerUrls } from 'vite';
 import { build } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,13 +23,22 @@ export interface DevelopmentLoaderOptions {
 // We bundle that with Vite into a CJS dev loader for Obsidian.
 const defaultShimPath = path.resolve(__dirname, 'hmr', 'obsidian-shim.js');
 
+const DEFAULT_ORIGIN = 'http://localhost:5173';
+
+function getOriginFromUrls(resolvedUrls: ResolvedServerUrls | null): string {
+  if (!resolvedUrls) return DEFAULT_ORIGIN;
+  return resolvedUrls.local?.[0] ?? resolvedUrls.network?.[0] ?? DEFAULT_ORIGIN;
+}
+
 async function writeDevelopmentLoader(
   outdir: string,
-  origin: string,
+  resolvedUrls: ResolvedServerUrls | null,
   shimPath: string,
   manifestPath: string
 ): Promise<void> {
   mkdirSync(outdir, { recursive: true });
+
+  const origin = getOriginFromUrls(resolvedUrls);
 
   await build({
     configFile: false,
@@ -75,18 +84,27 @@ export function developmentLoaderPlugin(
     watchShim = true,
   } = options;
 
-  const writeLoader = (origin: string) =>
-    writeDevelopmentLoader(outdir, origin, shimPath, manifestPath);
+  const writeLoader = (resolvedUrls: ResolvedServerUrls | null) =>
+    writeDevelopmentLoader(outdir, resolvedUrls, shimPath, manifestPath);
 
   return {
     name: 'obsidian-development-loader',
     configureServer(server) {
-      const origin =
-        server.config.server?.origin ??
-        `http://localhost:${server.config.server?.port ?? 5173}`;
+      const onListening = () => {
+        writeLoader(server.resolvedUrls).then(() => {
+          console.log(
+            'Obsidian dev loader written to',
+            outdir,
+            '(origin:',
+            getOriginFromUrls(server.resolvedUrls) + ')'
+          );
+        });
+      };
+
+      server.httpServer?.on('listening', onListening);
 
       return async () => {
-        await writeLoader(origin);
+        await writeLoader(server.resolvedUrls);
         console.log(
           'Obsidian dev loader written to',
           outdir,
@@ -98,7 +116,7 @@ export function developmentLoaderPlugin(
           server.watcher.add(resolvedShim);
           server.watcher.on('change', (file) => {
             if (path.resolve(file) === resolvedShim) {
-              writeLoader(origin).then(() => {
+              writeLoader(server.resolvedUrls).then(() => {
                 console.log(
                   `Obsidian dev loader rebuilt (${resolvedShim} changed)`
                 );
@@ -107,11 +125,6 @@ export function developmentLoaderPlugin(
           });
         }
       };
-    },
-    async closeBundle() {
-      const origin =
-        process.env.VITE_DEV_SERVER_ORIGIN ?? 'http://localhost:5173';
-      await writeLoader(origin);
-    },
+    }
   };
 }

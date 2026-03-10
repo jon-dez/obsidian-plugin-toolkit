@@ -74,18 +74,22 @@ class DevPlugin extends obsidian.Plugin {
       manifest: obsidian.PluginManifest,
     ) => obsidian.Plugin
   > {
+    const url = new URL(origin);
+
     const RefreshRuntime = await import(
-      /* @vite-ignore */ `${origin}/@react-refresh`
+      /* @vite-ignore */ new URL('@react-refresh', url).toString()
     );
     RefreshRuntime.injectIntoGlobalHook(globalThis);
     globalThis.$RefreshReg$ = () => {};
     globalThis.$RefreshSig$ = () => (type: unknown) => type;
     globalThis.__vite_plugin_react_preamble_installed__ = true;
 
-    await import(/* @vite-ignore */ `${origin}/@vite/client`);
+    await import(/* @vite-ignore */ new URL('@vite/client', url).toString());
 
     globalThis.__VITE_DEV_STORE__ ??= createDevStore(plugin);
     globalThis.__obsidian__ = { ...obsidian, Plugin };
+
+    const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
 
     const m = await import(/* @vite-ignore */ entryUrl).then((m) => m.default);
     if (!(m.prototype instanceof Plugin)) {
@@ -134,6 +138,5 @@ class DevPlugin extends obsidian.Plugin {
 }
 
 const devEntryPath = '/src/main.ts';
-const entryUrl = `${origin}${devEntryPath}?t=${Date.now()}`;
 
 export default DevPlugin;
