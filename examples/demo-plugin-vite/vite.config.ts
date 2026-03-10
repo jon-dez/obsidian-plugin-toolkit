@@ -13,7 +13,6 @@ export default async function config(
       entryPoints: ['src/main.ts'],
       outdir: path.resolve(__dirname, 'dist', 'development'),
       manifestPath: path.resolve(__dirname, 'manifest.json'),
-      watchShim: true,
     },
     alias: {
       src: path.resolve(__dirname, './src'),
