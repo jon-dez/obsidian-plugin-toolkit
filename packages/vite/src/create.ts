@@ -8,6 +8,25 @@ import { mkdirSync, copyFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import type { Options as ReactOptions } from '@vitejs/plugin-react';
 import { virtual } from './const/plugins';
+import { builtinModules } from 'node:module';
+
+
+const defaultExternal = [
+  'obsidian',
+  'electron',
+  '@codemirror/autocomplete',
+  '@codemirror/collab',
+  '@codemirror/commands',
+  '@codemirror/language',
+  '@codemirror/lint',
+  '@codemirror/search',
+  '@codemirror/state',
+  '@codemirror/view',
+  '@lezer/common',
+  '@lezer/highlight',
+  '@lezer/lr',
+  ...builtinModules,
+];
 
 export const VIRTUAL_DEV_UI_ID = virtual.devUi;
 const VIRTUAL_DEV_UI_ID_PREFIX = '\0' + VIRTUAL_DEV_UI_ID;
@@ -50,10 +69,19 @@ function virtualHmrLoggerPlugin(): Plugin {
   };
 }
 
+function isProductionDetected() {
+  return process.env.NODE_ENV === 'production';
+}
+
 function createViteObsidianPlugin(
   options: ViteObsidianPluginOptions = {}
 ): Plugin[] {
-  const plugins: Plugin[] = [obsidianShimPlugin()];
+  const plugins: Plugin[] = [
+    !isProductionDetected() ? obsidianShimPlugin() : (() => {
+      console.warn('Production detected, skipping obsidian-shim plugin');
+      return undefined;
+    })(),
+  ].filter((plugin) => plugin !== undefined);
 
   if (options.development) {
     plugins.push(developmentLoaderPlugin(options.development));
@@ -84,12 +112,12 @@ export function createViteObsidianConfig(
 
   return {
     resolve: {
-      external: ['obsidian'],
+      external: defaultExternal,
       alias: options.alias,
       dedupe: ['react', 'react-dom'],
     },
     optimizeDeps: {
-      exclude: ['obsidian'],
+      exclude: defaultExternal,
       include: ['react', 'react-dom'],
     },
     server: {
@@ -120,7 +148,7 @@ export function createViteObsidianConfig(
         fileName: () => 'main.js',
       },
       rollupOptions: {
-        external: ['obsidian'],
+        external: defaultExternal,
         output: {
           exports: 'named',
         },
