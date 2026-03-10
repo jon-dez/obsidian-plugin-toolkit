@@ -1,7 +1,9 @@
 import path from 'path';
-import { defineConfig } from 'vite';
+import type { ConfigEnv, UserConfig } from 'vite';
 
-export default defineConfig(async () => {
+export default async function config(
+  env: ConfigEnv,
+): Promise<UserConfig> {
   const { createViteObsidianConfig } = await import(
     '@obsidian-plugin-toolkit/vite'
   );
@@ -16,5 +18,5 @@ export default defineConfig(async () => {
     alias: {
       src: path.resolve(__dirname, './src'),
     },
-  });
-});
+  }) as UserConfig;
+}
