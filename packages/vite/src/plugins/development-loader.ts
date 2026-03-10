@@ -9,7 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export interface DevelopmentLoaderOptions {
   /** Output directory for the development loader (main.js) and manifest. Defaults to projectRoot/dist/development. */
   outdir: string;
-  /** Entry file(s) for the plugin (used for dev server entry; first is the main entry). */
+  /**
+   * Entry file(s) for the plugin (used for dev server entry; first is the main entry).
+   *
+   * Any entries ending in `.css` are treated as CSS entrypoints; they are
+   * bundled (including their imported styles) into a single stylesheet written
+   * to the `outdir` (e.g. `src/styles.css` → `outdir/styles.css`).
+   */
   entryPoints: string[];
   /** Path to manifest.json to copy into outdir. */
   manifestPath: string;
@@ -34,7 +40,8 @@ async function writeDevelopmentLoader(
   outdir: string,
   resolvedUrls: ResolvedServerUrls | null,
   shimPath: string,
-  manifestPath: string
+  manifestPath: string,
+  entryPoints: string[]
 ): Promise<void> {
   mkdirSync(outdir, { recursive: true });
 
@@ -72,6 +79,41 @@ async function writeDevelopmentLoader(
   });
 
   copyFileSync(manifestPath, path.join(outdir, 'manifest.json'));
+
+  // Bundle any CSS entrypoints into a single stylesheet in the outdir so
+  // Obsidian can load them directly. This allows `src/styles.css` to import
+  // other CSS files while still producing a single `styles.css` output.
+  const projectRoot = path.dirname(manifestPath);
+  const cssEntries = entryPoints.filter((entry) =>
+    entry.toLowerCase().endsWith('.css'),
+  );
+
+  if (cssEntries.length > 0) {
+    const [cssEntry] = cssEntries;
+    const input = path.resolve(projectRoot, cssEntry);
+
+    try {
+      await build({
+        configFile: false,
+        root: projectRoot,
+        build: {
+          outDir: outdir,
+          emptyOutDir: false,
+          rollupOptions: {
+            input,
+            output: {
+              assetFileNames: 'styles.css',
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.warn(
+        `Failed to bundle CSS entrypoint "${cssEntry}" from ${input} into ${outdir}/styles.css`,
+        error,
+      );
+    }
+  }
 }
 
 /**
@@ -90,7 +132,7 @@ export function developmentLoaderPlugin(
   } = options;
 
   const writeLoader = (resolvedUrls: ResolvedServerUrls | null) =>
-    writeDevelopmentLoader(outdir, resolvedUrls, shimPath, manifestPath);
+    writeDevelopmentLoader(outdir, resolvedUrls, shimPath, manifestPath, entryPoints);
 
   return {
     name: 'obsidian-development-loader',

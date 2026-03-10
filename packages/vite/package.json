@@ -1,6 +1,6 @@
 {
   "name": "@obsidian-plugin-toolkit/vite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vite plugins and utilities for Obsidian plugins with React Fast Refresh",
   "license": "MIT",
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
