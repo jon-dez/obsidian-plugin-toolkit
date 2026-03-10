@@ -10,25 +10,11 @@ import {
   Setting,
 } from '@obsidian-plugin-toolkit/react/components/setting/group';
 import { useRef, useState } from 'react';
-import { DevelopmentModeUI } from './dev-ui';
-import type { DevServerStore } from './dev-ui';
 import type { SettingsTab } from './settings';
-
-declare global {
-  const __VITE_DEV_STORE__: DevServerStore | undefined;
-}
 
 export function SettingsView({ settingTab }: { settingTab: SettingsTab }) {
   return (
     <Container>
-      {typeof __VITE_DEV_STORE__ !== 'undefined' && __VITE_DEV_STORE__ && (
-        <Group heading="Development">
-          <DevelopmentModeUI
-            store={__VITE_DEV_STORE__}
-            settingTab={settingTab}
-          />
-        </Group>
-      )}
       <Group heading="Demo Setting Group">
         <DemoTextSetting />
         <DemoDropdownSetting />

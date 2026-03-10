@@ -39,3 +39,4 @@ export interface ViteObsidianPluginOptions {
  * });
  */
 export { createViteObsidianConfig } from './create';
+export { default as obsidianShimPlugin } from './plugins/obsidian-shim';

@@ -9,14 +9,10 @@ import MagicString from 'magic-string';
 export default function obsidianShimPlugin(): Plugin {
   return {
     name: 'obsidian-shim',
-    enforce: 'pre',
+    enforce: 'post',
     async transform(code: string, id: string) {
-      if (
-        id.includes('node_modules') ||
-        !/\.(ts|js|tsx|jsx)$/.test(id) ||
-        id.endsWith('.tsx') ||
-        id.endsWith('.jsx')
-      ) {
+      const isShim = id.includes('obsidian-shim.js') || id.includes('obsidian-shim.ts');
+      if (isShim) {
         return null;
       }
 

@@ -13,5 +13,8 @@ export default defineConfig(async () => {
       manifestPath: path.resolve(__dirname, 'manifest.json'),
       watchShim: true,
     },
+    alias: {
+      src: path.resolve(__dirname, './src'),
+    }
   });
 });
