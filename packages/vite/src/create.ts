@@ -1,32 +1,11 @@
 import obsidianShimPlugin from './plugins/obsidian-shim';
 import { developmentLoaderPlugin } from './plugins/development-loader';
-import type { ViteObsidianPluginOptions } from './index';
-import type { AliasOptions, Plugin, UserConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import type { Plugin } from 'vite';
 import path from 'path';
-import { mkdirSync, copyFileSync } from 'fs';
 import { fileURLToPath } from 'node:url';
-import type { Options as ReactOptions } from '@vitejs/plugin-react';
 import { virtual } from './const/plugins';
-import { builtinModules } from 'node:module';
-
-
-const defaultExternal = [
-  'obsidian',
-  'electron',
-  '@codemirror/autocomplete',
-  '@codemirror/collab',
-  '@codemirror/commands',
-  '@codemirror/language',
-  '@codemirror/lint',
-  '@codemirror/search',
-  '@codemirror/state',
-  '@codemirror/view',
-  '@lezer/common',
-  '@lezer/highlight',
-  '@lezer/lr',
-  ...builtinModules,
-];
+import obsidianPluginBuilderPlugin from './plugins/obsidian-plugin-builder';
+import type { ViteObsidianPluginOptions } from './types';
 
 export const VIRTUAL_DEV_UI_ID = virtual.devUi;
 const VIRTUAL_DEV_UI_ID_PREFIX = '\0' + VIRTUAL_DEV_UI_ID;
@@ -47,7 +26,11 @@ function virtualDevUiPlugin(): Plugin {
     name: 'obsidian-virtual-dev-ui',
     enforce: 'pre',
     resolveId(id) {
-      if (id === VIRTUAL_DEV_UI_ID || id === VIRTUAL_DEV_UI_ID_PREFIX || id === `/${VIRTUAL_DEV_UI_ID}`) {
+      if (
+        id === VIRTUAL_DEV_UI_ID ||
+        id === VIRTUAL_DEV_UI_ID_PREFIX ||
+        id === `/${VIRTUAL_DEV_UI_ID}`
+      ) {
         return devUiPath;
       }
       return null;
@@ -61,7 +44,11 @@ function virtualHmrLoggerPlugin(): Plugin {
     name: 'obsidian-virtual-hmr-logger',
     enforce: 'pre',
     resolveId(id) {
-      if (id === virtual.hmrLogger || id === '\0' + virtual.hmrLogger || id === `/${virtual.hmrLogger}`) {
+      if (
+        id === virtual.hmrLogger ||
+        id === '\0' + virtual.hmrLogger ||
+        id === `/${virtual.hmrLogger}`
+      ) {
         return hmrLoggerPath;
       }
       return null;
@@ -73,90 +60,47 @@ function isProductionDetected() {
   return process.env.NODE_ENV === 'production';
 }
 
-function createViteObsidianPlugin(
-  options: ViteObsidianPluginOptions = {}
+/**
+ * Returns Vite plugins for Obsidian plugin development with support for React Fast Refresh.
+ *
+ * NOTE: @vitejs/plugin-react is not included in the plugins returned by this function. You must add it yourself.
+ *
+ * By default:
+ * - The plugin will be configured with support for HMR. You can disable this by setting `development` to `false`.
+ *
+ * @param options - The options for the Vite Obsidian plugin.
+ * @returns The Vite plugins.
+ */
+export function createViteObsidianPlugin(
+  options: Partial<ViteObsidianPluginOptions> = {},
 ): Plugin[] {
-  const plugins: Plugin[] = [
-    !isProductionDetected() ? obsidianShimPlugin() : (() => {
-      console.warn('Production detected, skipping obsidian-shim plugin');
-      return undefined;
-    })(),
-  ].filter((plugin) => plugin !== undefined);
+  const {
+    entryPoints = ['src/main.ts'],
+    manifestPath = 'manifest.json',
+    outDir = process.cwd(),
+    development = true,
+  } = options;
 
-  if (options.development) {
-    plugins.push(developmentLoaderPlugin(options.development));
+  const plugins: Plugin[] = [
+    obsidianPluginBuilderPlugin({
+      outDir,
+      entryPoints,
+      manifestPath,
+    }),
+  ];
+
+  if (!isProductionDetected() && development) {
+    plugins.push(obsidianShimPlugin());
+    plugins.push(
+      developmentLoaderPlugin({
+        outDir,
+        entryPoints,
+        manifestPath,
+      }),
+    );
     plugins.push(virtualDevUiPlugin());
     plugins.push(virtualHmrLoggerPlugin());
   }
 
   return plugins;
-}
-
-export interface CreateViteObsidianConfigOptions extends ViteObsidianPluginOptions {
-  /** Project root (e.g. __dirname). Used for build entry and copy-manifest. Defaults to process.cwd(). */
-  root?: string;
-  /** React options for the development loader. */
-  reactOptions?: ReactOptions;
-  define?: Record<string, string>;
-  alias?: AliasOptions;
-  inspect?: boolean;
-  additionalPlugins?: Plugin[];
-}
-
-export function createViteObsidianConfig(
-  options: CreateViteObsidianConfigOptions = {},
-) {
-  const root = options.root ?? process.cwd();
-  const plugins = createViteObsidianPlugin(options);
-  const reactPlugin = react(options.reactOptions);
-
-  return {
-    resolve: {
-      external: defaultExternal,
-      alias: options.alias,
-      dedupe: ['react', 'react-dom'],
-    },
-    optimizeDeps: {
-      exclude: defaultExternal,
-      include: ['react', 'react-dom'],
-    },
-    server: {
-      cors: {
-        origin: 'app://obsidian.md',
-      },
-    },
-    plugins: [
-      reactPlugin,
-      ...plugins,
-      {
-        name: 'copy-manifest',
-        closeBundle() {
-          const outdir = path.join(root, 'dist', 'production');
-          const manifestPath = path.join(root, 'manifest.json');
-          mkdirSync(outdir, { recursive: true });
-          copyFileSync(manifestPath, path.join(outdir, 'manifest.json'));
-        },
-      },
-      ...(options.additionalPlugins ?? []),
-    ],
-    build: {
-      outDir: 'dist/production',
-      emptyOutDir: true,
-      lib: {
-        entry: path.join(root, 'src', 'main.ts'),
-        formats: ['cjs'],
-        fileName: () => 'main.js',
-      },
-      rollupOptions: {
-        external: defaultExternal,
-        output: {
-          exports: 'named',
-        },
-      },
-      sourcemap: true,
-      minify: false,
-      target: 'es2022',
-    },
-    define: options.define,
-  } as UserConfig;
 }

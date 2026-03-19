@@ -10,6 +10,7 @@ export default function obsidianShimPlugin(): Plugin {
   return {
     name: 'obsidian-shim',
     enforce: 'post',
+    apply: 'serve',
     async transform(code: string, id: string) {
       const isShim = id.includes('obsidian-shim.js') || id.includes('obsidian-shim.ts');
       if (isShim) {
@@ -26,11 +27,9 @@ export default function obsidianShimPlugin(): Plugin {
       if (imports.length === 0) return null;
 
       const s = new MagicString(code);
-      let hasChanged = false;
 
       for (const imp of imports) {
         if (imp.n === 'obsidian') {
-          hasChanged = true;
           const importStatement = code.substring(imp.ss, imp.se);
           const namedMatch = importStatement.match(/import\s+\{(.+)\}\s+from/s);
           const wildcardMatch = importStatement.match(
@@ -50,7 +49,7 @@ export default function obsidianShimPlugin(): Plugin {
         }
       }
 
-      if (!hasChanged) return null;
+      if (!s.hasChanged()) return null;
 
       return {
         code: s.toString(),

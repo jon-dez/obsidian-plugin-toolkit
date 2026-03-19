@@ -13,22 +13,6 @@ import type { DevLogEntry, DevServerStore } from './ui';
 import { virtual } from './const/plugins';
 export * from 'obsidian';
 
-/** Injected at build time; parsed once and assigned to globalThis.__VITE_DEV__. */
-declare const __VITE_DEV__: typeof globalThis.__VITE_DEV__;
-
-function initViteDev(): NonNullable<typeof globalThis.__VITE_DEV__> {
-  const g = globalThis as typeof globalThis & { __VITE_DEV__?: typeof globalThis.__VITE_DEV__ };
-  if (g.__VITE_DEV__ && typeof g.__VITE_DEV__.origin === 'string') {
-    return g.__VITE_DEV__;
-  }
-  console.log('__VITE_DEV__', __VITE_DEV__);
-  g.__VITE_DEV__ = __VITE_DEV__;
-  return __VITE_DEV__;
-}
-
-const viteDev = initViteDev();
-const origin = viteDev.origin;
-
 const devComponentClass = 'vite-obsidian-dev-component';
 
 interface DevPluginLike {
@@ -43,10 +27,10 @@ function createDevStore(plugin: DevPluginLike): DevServerStore {
     url,
     lastEvent: null,
     lastError: null,
-    mode: viteDev.mode,
+    mode: __VITE_DEV__.mode,
     origin,
-    outDir: viteDev.outDir,
-    nodeVersion: viteDev.nodeVersion,
+    outDir: __VITE_DEV__.outDir,
+    nodeVersion: __VITE_DEV__.nodeVersion,
     logs: [],
     reloadPlugin() {
       const { app, manifest } = plugin;
@@ -150,9 +134,9 @@ class DevPlugin extends obsidian.Plugin {
     }
 
     const store =
-      viteDev.store ??
+      __VITE_DEV__.store ??
       createDevStore(plugin);
-    viteDev.store = store;
+    __VITE_DEV__.store = store;
     globalThis.__obsidian__ = { ...obsidian, Plugin };
 
     const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
@@ -203,7 +187,7 @@ class DevPlugin extends obsidian.Plugin {
   }
 
   override addSettingTab(settingTab: obsidian.PluginSettingTab): void {
-    const store = viteDev.store;
+    const store = __VITE_DEV__.store;
     if (!store || this.#devModeUI.has(settingTab)) {
       return super.addSettingTab(settingTab);
     }

@@ -1,14 +1,11 @@
+/// <reference types="vite/client" />
+
 import type { DevLogEntry, DevServerStore } from './ui';
 
-interface HotImportMeta extends ImportMeta {
-  hot?: {
-    on(event: string, cb: (payload: any) => void): void;
-  };
-}
 
 const hot =
   typeof import.meta !== 'undefined'
-    ? (import.meta as HotImportMeta).hot
+    ? import.meta.hot
     : undefined;
 
 function getStore(): DevServerStore | undefined {

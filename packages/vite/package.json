@@ -6,6 +6,14 @@
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
   "homepage": "https://github.com/jon-dez/obsidian-plugin-toolkit/tree/main/packages/vite#readme",
   "funding": "https://github.com/jon-dez",
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "vite",
+    "vite-plugin",
+    "react",
+    "fast-refresh"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jon-dez/obsidian-plugin-toolkit.git",
@@ -52,7 +60,7 @@
     "esbuild": "*",
     "react": ">=18",
     "react-dom": ">=18",
-    "vite": ">=5"
+    "vite": ">=8"
   },
   "devDependencies": {
     "es-module-lexer": "^2.0.0",
@@ -63,7 +71,7 @@
     "react-dom": ">=18",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vite": "^6.0.0"
+    "vite": "^8.0.0"
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.28.5"
