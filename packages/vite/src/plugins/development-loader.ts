@@ -10,11 +10,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // We bundle that with Vite into a CJS dev loader for Obsidian.
 const defaultShimPath = path.resolve(__dirname, 'dev', 'obsidian-shim.js');
 
-const DEFAULT_ORIGIN = 'http://localhost:5173';
+const DEFAULT_SERVER_URL = 'http://localhost:5173';
 
-function getOriginFromUrls(resolvedUrls: ResolvedServerUrls | null): string {
-  if (!resolvedUrls) return DEFAULT_ORIGIN;
-  return resolvedUrls.local?.[0] ?? resolvedUrls.network?.[0] ?? DEFAULT_ORIGIN;
+function getServerUrlFromUrls(resolvedUrls: ResolvedServerUrls | null): string {
+  if (!resolvedUrls) return DEFAULT_SERVER_URL;
+  return resolvedUrls.local?.[0] ?? resolvedUrls.network?.[0] ?? DEFAULT_SERVER_URL;
 }
 
 async function writeDevelopmentLoader(
@@ -26,14 +26,14 @@ async function writeDevelopmentLoader(
 ): Promise<void> {
   mkdirSync(outDir, { recursive: true });
 
-  const origin = getOriginFromUrls(resolvedUrls);
+  const serverUrl = getServerUrlFromUrls(resolvedUrls);
 
   await build({
     configFile: false,
     root: path.dirname(shimPath),
     define: {
       __VITE_DEV__: {
-        origin,
+        server: serverUrl,
         mode: process.env.NODE_ENV ?? 'development',
         outDir,
         nodeVersion: process.version,
@@ -120,7 +120,7 @@ export function developmentLoaderPlugin(
       entryPoints,
     );
 
-  let lastOrigin = DEFAULT_ORIGIN;
+  let lastServerUrl = DEFAULT_SERVER_URL;
 
   return {
     name: 'obsidian-development-loader',
@@ -146,13 +146,13 @@ export function developmentLoaderPlugin(
     },
     configureServer(server) {
       const onListening = () => {
-        lastOrigin = getOriginFromUrls(server.resolvedUrls);
+        lastServerUrl = getServerUrlFromUrls(server.resolvedUrls);
         writeLoader(server.resolvedUrls).then(() => {
           console.log(
             'Obsidian dev loader written to',
             outDir,
-            '(origin:',
-            lastOrigin + ')',
+            '(server URL:',
+            lastServerUrl + ')',
           );
         });
       };

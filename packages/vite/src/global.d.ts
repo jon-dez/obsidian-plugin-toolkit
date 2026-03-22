@@ -1,7 +1,7 @@
 declare global {
   var __obsidian__: typeof import('obsidian');
   var __VITE_DEV__: {
-    origin: string;
+    server: string;
     mode: string;
     outDir: string;
     nodeVersion: string;

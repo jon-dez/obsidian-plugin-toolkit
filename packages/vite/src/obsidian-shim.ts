@@ -15,22 +15,25 @@ export * from 'obsidian';
 
 const devComponentClass = 'vite-obsidian-dev-component';
 
-interface DevPluginLike {
-  app: obsidian.App;
-  manifest: { id: string };
+function initViteDev() {
+  const viteDev = __VITE_DEV__;
+  globalThis.__VITE_DEV__ = viteDev;
+  return viteDev;
 }
 
-function createDevStore(plugin: DevPluginLike): DevServerStore {
-  const url = new URL(origin);
+const viteDev = initViteDev();
+
+function createDevStore(plugin: Plugin): DevServerStore {
+  const server = viteDev.server;
+  const url = new URL(server);
   const listeners = new Set<() => void>();
   let state: ReturnType<DevServerStore['getServer']> = {
     url,
     lastEvent: null,
     lastError: null,
-    mode: __VITE_DEV__.mode,
-    origin,
-    outDir: __VITE_DEV__.outDir,
-    nodeVersion: __VITE_DEV__.nodeVersion,
+    mode: viteDev.mode,
+    outDir: viteDev.outDir,
+    nodeVersion: viteDev.nodeVersion,
     logs: [],
     reloadPlugin() {
       const { app, manifest } = plugin;
@@ -45,7 +48,9 @@ function createDevStore(plugin: DevPluginLike): DevServerStore {
   };
 
   const update = (
-    partial: Partial<Omit<ReturnType<DevServerStore['getServer']>, 'reloadPlugin'>>,
+    partial: Partial<
+      Omit<ReturnType<DevServerStore['getServer']>, 'reloadPlugin'>
+    >,
   ) => {
     state = { ...state, ...partial };
     notify();
@@ -81,6 +86,10 @@ export class Plugin extends obsidian.Plugin {
     console.log('Plugin loaded', { plugin: this });
     await super.onload();
   }
+
+  override addSettingTab(settingTab: obsidian.PluginSettingTab) {
+    this.dev?.addSettingTab(settingTab);
+  }
 }
 
 class DevPlugin extends obsidian.Plugin {
@@ -93,13 +102,7 @@ class DevPlugin extends obsidian.Plugin {
     this.#innerPromise = DevPlugin.load(this).then((PluginClass) => {
       const inner = (this.#inner = new PluginClass(...args));
 
-      const originalAddSettingTab = inner.addSettingTab;
-
-      inner.addSettingTab = (...args: Parameters<typeof originalAddSettingTab>) => {
-        this.addSettingTab(...args);
-        // originalAddSettingTab.apply(inner, args);
-      };
-
+      inner.dev = this;
 
       return inner;
     });
@@ -108,12 +111,9 @@ class DevPlugin extends obsidian.Plugin {
   static async load(
     plugin: DevPlugin,
   ): Promise<
-    new (
-      app: obsidian.App,
-      manifest: obsidian.PluginManifest,
-    ) => obsidian.Plugin
+    new (app: obsidian.App, manifest: obsidian.PluginManifest) => Plugin
   > {
-    const url = new URL(origin);
+    const url = new URL(viteDev.server);
 
     const RefreshRuntime = await import(
       /* @vite-ignore */ new URL('@react-refresh', url).toString()
@@ -133,10 +133,7 @@ class DevPlugin extends obsidian.Plugin {
       console.warn('Failed to load Vite HMR logger from dev server.', error);
     }
 
-    const store =
-      __VITE_DEV__.store ??
-      createDevStore(plugin);
-    __VITE_DEV__.store = store;
+    viteDev.store ??= createDevStore(plugin);
     globalThis.__obsidian__ = { ...obsidian, Plugin };
 
     const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
@@ -174,20 +171,20 @@ class DevPlugin extends obsidian.Plugin {
     const inner = await this.#getInner();
     await inner.onload();
     this.register(async () => {
-      await inner.onunload();
+      inner.onunload();
     });
   }
 
   override async onunload() {
     const inner = await this.#getInner();
-    await inner.onunload();
+    inner.onunload();
     this.#inner = undefined;
     // this.#innerPromise = undefined;
     super.onunload();
   }
 
   override addSettingTab(settingTab: obsidian.PluginSettingTab): void {
-    const store = __VITE_DEV__.store;
+    const store = viteDev.store;
     if (!store || this.#devModeUI.has(settingTab)) {
       return super.addSettingTab(settingTab);
     }
@@ -252,15 +249,12 @@ class DevModeUI {
     (async () => {
       try {
         const devUiUrl = new URL(virtual.devUi, server.url);
-        const mod = await import(
-          /* @vite-ignore */ devUiUrl.toString()
-        );
-        const mountDevUi: ((options: {
+        const mod = await import(/* @vite-ignore */ devUiUrl.toString());
+        const mountDevUi: (options: {
           container: HTMLElement;
           store: DevServerStore;
           settingTab: obsidian.PluginSettingTab;
-        }) => () => void) =
-          (mod as any).mountDevUi ?? (mod as any).default;
+        }) => () => void = (mod as any).mountDevUi ?? (mod as any).default;
 
         if (typeof mountDevUi === 'function') {
           this.#unmount = mountDevUi({
@@ -284,4 +278,3 @@ class DevModeUI {
     this.#rootEl = undefined;
   }
 }
-

@@ -9,8 +9,7 @@ const hot =
     : undefined;
 
 function getStore(): DevServerStore | undefined {
-  return (globalThis as typeof globalThis & { __VITE_DEV__?: { store?: DevServerStore } })
-    .__VITE_DEV__?.store;
+  return globalThis.__VITE_DEV__?.store;
 }
 
 function log(kind: string, detail?: string) {

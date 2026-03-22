@@ -17,7 +17,6 @@ export interface DevServerStore {
     lastEvent: { type: 'hmr' | 'reload' | 'ping'; at: Date } | null;
     lastError: string | null;
     mode: string;
-    origin: string;
     outDir: string;
     nodeVersion: string;
     logs: DevLogEntry[];
