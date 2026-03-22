@@ -30,43 +30,42 @@ Create a `vite.config.ts` at the root of your Obsidian plugin project:
 
 ```ts
 import path from 'path'
-import type { ConfigEnv, UserConfig } from 'vite'
+import { defineConfig } from 'vite'
+import { createViteObsidianPlugin } from '@obsidian-plugin-toolkit/vite'
 
-export default async function config(
-  _env: ConfigEnv,
-): Promise<UserConfig> {
-  const { createViteObsidianConfig } = await import(
-    '@obsidian-plugin-toolkit/vite'
-  )
+const prod = process.env.NODE_ENV === 'production'
 
-  return createViteObsidianConfig({
-    root: __dirname,
-
-    development: {
-      // Your entrypoints for dev (script + styles, etc.)
-      entryPoints: ['src/main.ts', 'src/styles.css'],
-
-      // Where dev builds should be written
-      outdir: path.resolve(__dirname, 'dist', 'development'),
-
-      // Path to your plugin manifest.json
+export default defineConfig(() => ({
+  plugins: [
+    createViteObsidianPlugin({
+      entryPoints: ['src/main.ts'],
       manifestPath: path.resolve(__dirname, 'manifest.json'),
+      outDir: prod
+        ? path.resolve(__dirname, 'dist', 'production')
+        : path.resolve(__dirname, 'dist', 'development'),
+    }),
+  ],
+  build: {
+    emptyOutDir: true,
+    sourcemap: !prod,
+    minify: prod,
+    target: 'es2023',
+  },
+}))
+```
 
-      // Optional: enable a file-watch shim suitable for Obsidian
-      watchShim: true,
-    },
+For React-based UIs, add `@vitejs/plugin-react` before the Obsidian plugin:
 
-    // Optional: pass through arbitrary Vite `define` values
-    // define: {
-    //   __APP_VERSION__: JSON.stringify('0.0.1'),
-    // },
+```ts
+import react from '@vitejs/plugin-react'
 
-    // Optional: convenience aliases
-    alias: {
-      src: path.resolve(__dirname, './src'),
-    },
-  }) as UserConfig
-}
+export default defineConfig(() => ({
+  plugins: [
+    react(),
+    createViteObsidianPlugin({ /* ... */ }),
+  ],
+  // ...
+}))
 ```
 
 Then run:
@@ -80,16 +79,13 @@ npx vite build
 
 ### API
 
-**Key fields:**
+**`createViteObsidianPlugin(options)`** — Returns an array of Vite plugins. Add it to your `plugins` array.
 
-- **`root`**: Absolute path to your plugin project root (usually `__dirname` from `vite.config.ts`).
-- **`development.entryPoints`**: Array of entry files for dev builds (e.g. `['src/main.ts', 'src/styles.css']`).
-- **`development.outdir`**: Output directory for development builds (e.g. `dist/development`).
-- **`development.manifestPath`**: Path to your `manifest.json` (used for Obsidian plugin metadata).
-- **`development.watchShim`**: Optional boolean to enable file watching suitable for hot-ish iteration inside Obsidian.
-- **`define`**: Optional object forwarded to Vite’s `define` option.
-- **`alias`**: Optional alias map forwarded to Vite’s `resolve.alias`.
-- **`reactOptions`**: Optional options for React/Babel if you are using React.
+**Options:**
+
+- **`entryPoints`**: Array of entry files (e.g. `['src/main.ts']` or `['src/main.ts', 'src/styles.css']`). First entry is the main JS; `.css` entries are bundled into a single stylesheet in `outDir`. Default: `['src/main.ts']`.
+- **`outDir`**: Output directory for the built plugin (e.g. `dist/development` or `dist/production`). Default: `process.cwd()`.
+- **`manifestPath`**: Path to your `manifest.json` (copied into `outDir`). Default: `'manifest.json'`.
 
 ---
 
@@ -112,6 +108,8 @@ my-obsidian-plugin/
 ```
 
 You can combine this package with other `@obsidian-plugin-toolkit/*` packages (e.g. `@obsidian-plugin-toolkit/react`, `@obsidian-plugin-toolkit/esbuild`) depending on how you prefer to structure your UI and build pipeline.
+
+See [`examples/demo-plugin-vite`](../../examples/demo-plugin-vite/) for a working example with React.
 
 ---
 
