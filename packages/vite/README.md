@@ -1,8 +1,8 @@
 ### `@obsidian-plugin-toolkit/vite`
 
-`@obsidian-plugin-toolkit/vite` is a small helper for building Obsidian plugins with Vite. It wraps Vite’s configuration so you can focus on your plugin code instead of wiring up manifests, dev builds, and bundler defaults.
+`@obsidian-plugin-toolkit/vite` is a small helper for building Obsidian plugins with Vite. It wraps Vite's configuration so you can focus on your plugin code instead of wiring up manifests, dev builds, and bundler defaults.
 
-It is designed to work alongside the rest of `@obsidian-plugin-toolkit` and follows Obsidian’s plugin packaging conventions.
+It is designed to work alongside the rest of `@obsidian-plugin-toolkit` and follows Obsidian's plugin packaging conventions.
 
 ---
 
@@ -16,7 +16,7 @@ pnpm add -D @obsidian-plugin-toolkit/vite
 yarn add -D @obsidian-plugin-toolkit/vite
 ```
 
-You’ll also need Vite and (optionally) the React plugin if you’re building a React-based UI:
+You'll also need Vite and (optionally) the React plugin if you're building a React-based UI:
 
 ```bash
 npm install --save-dev vite @vitejs/plugin-react
@@ -77,6 +77,35 @@ npx vite build
 
 ---
 
+### How development mode works
+
+When you run `vite dev`, the toolkit writes a CJS development loader (`main.js`) into `outDir`. Point your Obsidian vault's plugin directory at that folder and enable the plugin — Obsidian will load the shim, which bootstraps Vite's HMR client and dynamically imports your actual plugin code from the dev server.
+
+#### Artifact sync
+
+Whenever a file in `outDir` changes (e.g. `manifest.json`, `styles.css`, or the shim itself), the Vite server notifies connected Obsidian clients via an HMR event. The plugin running inside Obsidian fetches the updated files directly from the Vite dev server and installs them into the plugin directory, snapshotting the previous version first.
+
+This also works across machines — any Obsidian client that can reach the Vite server's URL will receive updates.
+
+The Dev Menu (accessible from the plugin's settings tab) lets you:
+
+- View and edit the Vite server URL
+- Switch between previously connected servers
+- Manually trigger a download of the latest artifacts
+- Reload the plugin
+
+Snapshots of previous artifact versions are stored at:
+```
+<vault>/.obsidian/.@obsidian-plugin-toolkit/vite/<plugin-id>/snapshots/<timestamp>/
+```
+
+Connection history is stored at:
+```
+<vault>/.obsidian/.@obsidian-plugin-toolkit/vite/<plugin-id>/connections.json
+```
+
+---
+
 ### API
 
 **`createViteObsidianPlugin(options)`** — Returns an array of Vite plugins. Add it to your `plugins` array.
@@ -84,14 +113,14 @@ npx vite build
 **Options:**
 
 - **`entryPoints`**: Array of entry files (e.g. `['src/main.ts']` or `['src/main.ts', 'src/styles.css']`). First entry is the main JS; `.css` entries are bundled into a single stylesheet in `outDir`. Default: `['src/main.ts']`.
-- **`outDir`**: Output directory for the built plugin (e.g. `dist/development` or `dist/production`). Default: `process.cwd()`.
+- **`outDir`**: Output directory for the built plugin. Default: `process.cwd()`.
 - **`manifestPath`**: Path to your `manifest.json` (copied into `outDir`). Default: `'manifest.json'`.
+- **`loader`**: Optional overrides for the development loader. Pass an object to override `shimPath`, `watchShim`, `root`, or `vaultRoot`. The `vaultRoot` is auto-detected from `outDir` when `outDir` is inside `.obsidian/plugins/`.
+- **`development`**: Deprecated. Use `loader` instead.
 
 ---
 
 ### Typical project layout
-
-A minimal Obsidian plugin project using `@obsidian-plugin-toolkit/vite` usually looks like:
 
 ```text
 my-obsidian-plugin/
@@ -104,10 +133,8 @@ my-obsidian-plugin/
     ...
   dist/
     development/
-    production/    # if you also emit production builds
+    production/
 ```
-
-You can combine this package with other `@obsidian-plugin-toolkit/*` packages (e.g. `@obsidian-plugin-toolkit/react`, `@obsidian-plugin-toolkit/esbuild`) depending on how you prefer to structure your UI and build pipeline.
 
 See [`examples/demo-plugin-vite`](../../examples/demo-plugin-vite/) for a working example with React.
 
@@ -121,6 +148,5 @@ See [`examples/demo-plugin-vite`](../../examples/demo-plugin-vite/) for a workin
   - Keep configuration explicit and TypeScript-friendly.
 
 - **Non-goals**
-  - Replace Vite’s own config entirely; you can still layer your own Vite plugins and options on top.
-  - Handle publishing or packaging; those concerns typically live in your own scripts (e.g. `package.mts`).
-
+  - Replace Vite's own config entirely; you can still layer your own Vite plugins and options on top.
+  - Handle publishing or packaging; those concerns typically live in your own scripts.

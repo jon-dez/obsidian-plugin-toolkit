@@ -9,6 +9,7 @@ export default defineConfig({
     'dev/ui': 'src/ui.tsx',
     'dev/obsidian-shim': 'src/obsidian-shim.ts',
     'dev/hmr-logger': 'src/hmr-logger.ts',
+    'dev/plugin-loader-client': 'src/plugin-loader-client.ts',
   },
   format: ['esm'],
   external: ['obsidian', 'vite', '@vitejs/plugin-react'],
