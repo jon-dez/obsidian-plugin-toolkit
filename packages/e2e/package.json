@@ -50,7 +50,10 @@
     "build": "tsup",
     "build:watch": "tsup --watch",
     "clean": "rm -rf dist",
-    "cdp-util": "tsx scripts/cdp-util.mts"
+    "cdp-util": "tsx scripts/cdp-util.mts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "peerDependencies": {
     "@wdio/devtools-service": ">=10",
@@ -77,6 +80,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.9",
     "wdio-obsidian-service": "^3.0.2",
     "webdriverio": "^9.27.0"
   }
