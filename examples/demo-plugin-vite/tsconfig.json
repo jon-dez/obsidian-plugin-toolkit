@@ -18,11 +18,13 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.mts"],
+  "include": ["src", "test", "vite.config.mts", "wdio.conf.mts"],
   "references": [
     { "path": "../../packages/react" },
-    { "path": "../../packages/vite" }
+    { "path": "../../packages/vite" },
+    { "path": "../../packages/e2e"}
   ]
 }
