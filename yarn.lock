@@ -1620,13 +1620,13 @@ __metadata:
   peerDependencies:
     "@wdio/devtools-service": ">=10"
     "@wdio/globals": ">=9"
-    puppeteer-core: ">=21"
+    obsidian-launcher: ">=2"
     wdio-obsidian-service: ">=2"
     webdriverio: ">=9"
   peerDependenciesMeta:
     "@wdio/devtools-service":
       optional: true
-    puppeteer-core:
+    obsidian-launcher:
       optional: true
   bin:
     obsidian-cdp-util: ./dist/cdp-util.js

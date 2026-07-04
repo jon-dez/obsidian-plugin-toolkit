@@ -40,6 +40,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./cdp": {
+      "types": "./dist/cdp.d.ts",
+      "import": "./dist/cdp.js"
     }
   },
   "scripts": {
@@ -51,7 +55,7 @@
   "peerDependencies": {
     "@wdio/devtools-service": ">=10",
     "@wdio/globals": ">=9",
-    "puppeteer-core": ">=21",
+    "obsidian-launcher": ">=2",
     "wdio-obsidian-service": ">=2",
     "webdriverio": ">=9"
   },
@@ -59,7 +63,7 @@
     "@wdio/devtools-service": {
       "optional": true
     },
-    "puppeteer-core": {
+    "obsidian-launcher": {
       "optional": true
     }
   },
