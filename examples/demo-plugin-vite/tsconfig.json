@@ -17,11 +17,14 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@obsidian-plugin-toolkit/react": ["../../packages/react/src/index.ts"],
+      "@obsidian-plugin-toolkit/react/*": ["../../packages/react/src/*"],
+      "@obsidian-plugin-toolkit/vite": ["../../packages/vite/src/index.ts"],
+      "@obsidian-plugin-toolkit/vite/*": ["../../packages/vite/src/*"],
+      "src/*": ["../../packages/react/src/*"]
+    }
   },
-  "include": ["src", "vite.config.mts"],
-  "references": [
-    { "path": "../../packages/react" },
-    { "path": "../../packages/vite" }
-  ]
+  "include": ["src", "vite.config.mts"]
 }
