@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "declarationMap": true,
     "declaration": true,
     "inlineSourceMap": true,
@@ -17,8 +16,8 @@
     "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["src", "vite.config.mts"],
   "references": [

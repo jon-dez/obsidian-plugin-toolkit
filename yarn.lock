@@ -913,6 +913,7 @@ __metadata:
     react: "npm:18"
     react-dom: "npm:18"
     tslib: "npm:^2.8.1"
+    typescript: "npm:^7.0.2"
     vite: "npm:^8.0.0"
   languageName: unknown
   linkType: soft
