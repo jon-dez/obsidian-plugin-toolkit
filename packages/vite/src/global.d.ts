@@ -5,6 +5,8 @@ declare global {
     mode: string;
     outDir: string;
     nodeVersion: string;
+    manifestId: string | null;
+    vaultRoot: string;
     store?: import('./ui').DevServerStore;
   };
   var $RefreshReg$: () => void;

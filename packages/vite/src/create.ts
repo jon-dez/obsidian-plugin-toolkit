@@ -1,5 +1,6 @@
 import obsidianShimPlugin from './plugins/obsidian-shim';
 import { developmentLoaderPlugin } from './plugins/development-loader';
+import { vitePluginLoaderPlugin } from './plugins/plugin-loader';
 import type { Plugin } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +19,11 @@ function getDevUiFilePath(): string {
 function getHmrLoggerFilePath(): string {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   return path.join(dir, 'dev', 'hmr-logger.js');
+}
+
+function getPluginLoaderClientFilePath(): string {
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  return path.join(dir, 'dev', 'plugin-loader-client.js');
 }
 
 function virtualDevUiPlugin(): Plugin {
@@ -56,9 +62,29 @@ function virtualHmrLoggerPlugin(): Plugin {
   };
 }
 
+function virtualPluginLoaderClientPlugin(): Plugin {
+  const pluginLoaderClientPath = getPluginLoaderClientFilePath();
+  return {
+    name: 'obsidian-virtual-plugin-loader-client',
+    enforce: 'pre',
+    resolveId(id) {
+      if (
+        id === virtual.pluginLoaderClient ||
+        id === '\0' + virtual.pluginLoaderClient ||
+        id === `/${virtual.pluginLoaderClient}`
+      ) {
+        return pluginLoaderClientPath;
+      }
+      return null;
+    },
+  };
+}
+
 function isProductionDetected() {
   return process.env.NODE_ENV === 'production';
 }
+
+let hasWarnedDeprecatedDevelopmentOption = false;
 
 /**
  * Returns Vite plugins for Obsidian plugin development with support for React Fast Refresh.
@@ -79,6 +105,7 @@ export function createViteObsidianPlugin(
     manifestPath = 'manifest.json',
     outDir = process.cwd(),
     development = true,
+    loader,
   } = options;
 
   const plugins: Plugin[] = [
@@ -91,15 +118,39 @@ export function createViteObsidianPlugin(
 
   if (!isProductionDetected() && development) {
     plugins.push(obsidianShimPlugin());
-    plugins.push(
-      developmentLoaderPlugin({
-        outDir,
-        entryPoints,
-        manifestPath,
-      }),
-    );
+    if (loader && typeof loader === 'object') {
+      plugins.push(
+        developmentLoaderPlugin({
+          ...loader,
+          outDir,
+          entryPoints,
+          manifestPath,
+        }),
+      );
+    } else {
+      const legacyLoaderOverrides =
+        development && typeof development === 'object'
+          ? (development.loader ?? {})
+          : {};
+      if (development && typeof development === 'object' && !hasWarnedDeprecatedDevelopmentOption) {
+        hasWarnedDeprecatedDevelopmentOption = true;
+        console.warn(
+          '[DEPRECATED] `development` option is deprecated. Use `loader` in createViteObsidianPlugin options.',
+        );
+      }
+      plugins.push(
+        developmentLoaderPlugin({
+          outDir,
+          entryPoints,
+          manifestPath,
+          ...legacyLoaderOverrides,
+        }),
+      );
+    }
+    plugins.push(vitePluginLoaderPlugin({ outDir, manifestPath }));
     plugins.push(virtualDevUiPlugin());
     plugins.push(virtualHmrLoggerPlugin());
+    plugins.push(virtualPluginLoaderClientPlugin());
   }
 
   return plugins;

@@ -15,6 +15,8 @@ export * from 'obsidian';
 
 const devComponentClass = 'vite-obsidian-dev-component';
 
+const ARTIFACT_ENDPOINT_PREFIX = '/~obsidian-toolkit/dist';
+
 function initViteDev() {
   const viteDev = __VITE_DEV__;
   globalThis.__VITE_DEV__ = viteDev;
@@ -25,7 +27,7 @@ const viteDev = initViteDev();
 
 function createDevStore(plugin: Plugin): DevServerStore {
   const server = viteDev.server;
-  const url = new URL(server);
+  let url = new URL(server);
   const listeners = new Set<() => void>();
   let state: ReturnType<DevServerStore['getServer']> = {
     url,
@@ -34,6 +36,8 @@ function createDevStore(plugin: Plugin): DevServerStore {
     mode: viteDev.mode,
     outDir: viteDev.outDir,
     nodeVersion: viteDev.nodeVersion,
+    manifestId: viteDev.manifestId,
+    vaultRoot: viteDev.vaultRoot,
     logs: [],
     reloadPlugin() {
       const { app, manifest } = plugin;
@@ -56,7 +60,7 @@ function createDevStore(plugin: Plugin): DevServerStore {
     notify();
   };
 
-  return {
+  const store: DevServerStore = {
     getServer: () => state,
     subscribe(cb: () => void) {
       listeners.add(cb);
@@ -77,7 +81,103 @@ function createDevStore(plugin: Plugin): DevServerStore {
         logs: nextLogs.slice(-maxLogs),
       });
     },
+    async listArtifacts() {
+      const { manifestId } = state;
+      if (!manifestId) return [];
+      const serverUrl = url.toString().replace(/\/$/, '');
+      try {
+        const res = await fetch(`${serverUrl}${ARTIFACT_ENDPOINT_PREFIX}/${manifestId}`);
+        if (!res.ok) {
+          console.warn(`[obsidian-toolkit] listArtifacts: server returned ${res.status}`);
+          return [];
+        }
+        const data = (await res.json()) as { files?: string[] };
+        return Array.isArray(data.files) ? data.files : [];
+      } catch (err) {
+        console.warn('[obsidian-toolkit] listArtifacts: failed to reach server', err);
+        return [];
+      }
+    },
+    setServerUrl(urlStr) {
+      try {
+        url = new URL(urlStr);
+        update({ url });
+      } catch {
+        // Invalid URL — ignore
+      }
+    },
+    async syncArtifacts(files) {
+      const { manifestId } = state;
+      if (!manifestId) return;
+
+      const serverUrl = url.toString().replace(/\/$/, '');
+      const adapter = plugin.app.vault.adapter;
+      const configDir = plugin.app.vault.configDir;
+
+      const pluginDirRel = plugin.manifest.dir ?? `${configDir}/plugins/${manifestId}`;
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const snapshotDirRel = `${configDir}/.@obsidian-plugin-toolkit/vite/${manifestId}/snapshots/${timestamp}`;
+
+      let snapshotDirCreated = false;
+
+      for (const fileName of files) {
+        const endpoint = `${serverUrl}${ARTIFACT_ENDPOINT_PREFIX}/${manifestId}/${fileName}`;
+        let newContent: string;
+        try {
+          const response = await fetch(endpoint);
+          if (!response.ok) {
+            console.warn(`[obsidian-toolkit] server returned ${response.status} for ${fileName}`);
+            continue;
+          }
+          newContent = await response.text();
+        } catch (err) {
+          console.warn(`[obsidian-toolkit] failed to fetch ${fileName}`, err);
+          continue;
+        }
+
+        // Snapshot the current file before overwriting
+        const currentFilePath = `${pluginDirRel}/${fileName}`;
+        try {
+          const current = await adapter.read(currentFilePath);
+          if (!snapshotDirCreated) {
+            await adapter.mkdir(snapshotDirRel);
+            snapshotDirCreated = true;
+          }
+          await adapter.write(`${snapshotDirRel}/${fileName}`, current);
+        } catch {
+          // File doesn't exist yet — no snapshot needed
+        }
+
+        // Install the new file
+        try {
+          await adapter.write(currentFilePath, newContent);
+          console.log(`[obsidian-toolkit] installed ${fileName}`);
+        } catch (err) {
+          console.warn(`[obsidian-toolkit] failed to write ${fileName}`, err);
+        }
+      }
+
+      // Record this sync in the connection history
+      const toolkitDirRel = `${configDir}/.@obsidian-plugin-toolkit/vite/${manifestId}`;
+      const connectionsPath = `${toolkitDirRel}/connections.json`;
+      const entry = { url: serverUrl, syncedAt: new Date().toISOString(), files };
+      try {
+        await adapter.mkdir(toolkitDirRel);
+        let existing: object[] = [];
+        try {
+          const raw = await adapter.read(connectionsPath);
+          existing = JSON.parse(raw) as object[];
+        } catch {}
+        existing.push(entry);
+        await adapter.write(connectionsPath, JSON.stringify(existing, null, 2));
+      } catch (err) {
+        console.warn('[obsidian-toolkit] failed to update connections.json', err);
+      }
+    },
   };
+
+  return store;
 }
 
 export class Plugin extends obsidian.Plugin {
@@ -134,6 +234,15 @@ class DevPlugin extends obsidian.Plugin {
     }
 
     viteDev.store ??= createDevStore(plugin);
+
+    try {
+      await import(
+        /* @vite-ignore */ new URL(virtual.pluginLoaderClient, url).toString()
+      );
+    } catch (error) {
+      console.warn('Failed to load Vite plugin loader client from dev server.', error);
+    }
+
     globalThis.__obsidian__ = { ...obsidian, Plugin };
 
     const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
@@ -254,7 +363,7 @@ class DevModeUI {
           container: HTMLElement;
           store: DevServerStore;
           settingTab: obsidian.PluginSettingTab;
-        }) => () => void = (mod as any).mountDevUi ?? (mod as any).default;
+        }) => () => void = mod.mountDevUi ?? mod.default;
 
         if (typeof mountDevUi === 'function') {
           this.#unmount = mountDevUi({
