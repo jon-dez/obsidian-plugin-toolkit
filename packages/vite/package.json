@@ -52,8 +52,9 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -71,8 +72,8 @@
     "obsidian": "^1.11.4",
     "react": ">=18",
     "react-dom": ">=18",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
+    "tsdown": "^0.22.5",
+    "typescript": "^7.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.9"
   },

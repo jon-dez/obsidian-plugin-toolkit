@@ -13,9 +13,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "composite": true,
-    "baseUrl": ".",
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": []
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

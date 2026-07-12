@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 import banner from '../../common/banner.mjs';
 
 const prod = process.env.NODE_ENV === 'production';
@@ -12,16 +12,15 @@ export default defineConfig({
     'dev/plugin-loader-client': 'src/plugin-loader-client.ts',
   },
   format: ['esm'],
-  external: ['obsidian', 'vite', '@vitejs/plugin-react'],
-  dts: {
-    compilerOptions: {
-      composite: false,
-    },
-  },
+  dts: true,
   clean: true,
   sourcemap: !prod,
   target: 'es2022',
   minify: prod,
+  fixedExtension: false,
+  deps: {
+    neverBundle: ['obsidian', 'vite', '@vitejs/plugin-react'],
+  },
   banner: {
     js: banner,
   },
