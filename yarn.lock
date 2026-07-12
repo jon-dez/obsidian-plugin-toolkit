@@ -989,8 +989,8 @@ __metadata:
     obsidian: "npm:^1.11.4"
     react: "npm:>=18"
     react-dom: "npm:>=18"
-    tsup: "npm:^8.5.1"
-    typescript: "npm:^5.9.3"
+    tsdown: "npm:^0.22.5"
+    typescript: "npm:^7.0.2"
     vite: "npm:^8.0.0"
     vitest: "npm:^4.1.9"
   peerDependencies:
