@@ -11,11 +11,11 @@
 import * as obsidian from 'obsidian';
 import type { DevLogEntry, DevServerStore } from './ui';
 import { virtual } from './const/plugins';
+import { listArtifacts, syncArtifacts } from './dev-store-compat';
 export * from 'obsidian';
 
 const devComponentClass = 'vite-obsidian-dev-component';
 
-const ARTIFACT_ENDPOINT_PREFIX = '/~obsidian-toolkit/dist';
 
 function initViteDev() {
   const viteDev = __VITE_DEV__;
@@ -82,21 +82,7 @@ function createDevStore(plugin: Plugin): DevServerStore {
       });
     },
     async listArtifacts() {
-      const { manifestId } = state;
-      if (!manifestId) return [];
-      const serverUrl = url.toString().replace(/\/$/, '');
-      try {
-        const res = await fetch(`${serverUrl}${ARTIFACT_ENDPOINT_PREFIX}/${manifestId}`);
-        if (!res.ok) {
-          console.warn(`[obsidian-toolkit] listArtifacts: server returned ${res.status}`);
-          return [];
-        }
-        const data = (await res.json()) as { files?: string[] };
-        return Array.isArray(data.files) ? data.files : [];
-      } catch (err) {
-        console.warn('[obsidian-toolkit] listArtifacts: failed to reach server', err);
-        return [];
-      }
+      return listArtifacts();
     },
     setServerUrl(urlStr) {
       try {
@@ -106,74 +92,19 @@ function createDevStore(plugin: Plugin): DevServerStore {
         // Invalid URL — ignore
       }
     },
-    async syncArtifacts(files) {
-      const { manifestId } = state;
-      if (!manifestId) return;
-
-      const serverUrl = url.toString().replace(/\/$/, '');
-      const adapter = plugin.app.vault.adapter;
-      const configDir = plugin.app.vault.configDir;
-
-      const pluginDirRel = plugin.manifest.dir ?? `${configDir}/plugins/${manifestId}`;
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const snapshotDirRel = `${configDir}/.@obsidian-plugin-toolkit/vite/${manifestId}/snapshots/${timestamp}`;
-
-      let snapshotDirCreated = false;
-
-      for (const fileName of files) {
-        const endpoint = `${serverUrl}${ARTIFACT_ENDPOINT_PREFIX}/${manifestId}/${fileName}`;
-        let newContent: string;
-        try {
-          const response = await fetch(endpoint);
-          if (!response.ok) {
-            console.warn(`[obsidian-toolkit] server returned ${response.status} for ${fileName}`);
-            continue;
-          }
-          newContent = await response.text();
-        } catch (err) {
-          console.warn(`[obsidian-toolkit] failed to fetch ${fileName}`, err);
-          continue;
-        }
-
-        // Snapshot the current file before overwriting
-        const currentFilePath = `${pluginDirRel}/${fileName}`;
-        try {
-          const current = await adapter.read(currentFilePath);
-          if (!snapshotDirCreated) {
-            await adapter.mkdir(snapshotDirRel);
-            snapshotDirCreated = true;
-          }
-          await adapter.write(`${snapshotDirRel}/${fileName}`, current);
-        } catch {
-          // File doesn't exist yet — no snapshot needed
-        }
-
-        // Install the new file
-        try {
-          await adapter.write(currentFilePath, newContent);
-          console.log(`[obsidian-toolkit] installed ${fileName}`);
-        } catch (err) {
-          console.warn(`[obsidian-toolkit] failed to write ${fileName}`, err);
-        }
+    reconnect() {
+      const ws = globalThis.__VITE_DEV__?.ws;
+      if (ws) {
+        ws.close();
+      } else {
+        const { app, manifest } = plugin;
+        app.plugins.disablePlugin(manifest.id).then(() => {
+          app.plugins.enablePlugin(manifest.id);
+        });
       }
-
-      // Record this sync in the connection history
-      const toolkitDirRel = `${configDir}/.@obsidian-plugin-toolkit/vite/${manifestId}`;
-      const connectionsPath = `${toolkitDirRel}/connections.json`;
-      const entry = { url: serverUrl, syncedAt: new Date().toISOString(), files };
-      try {
-        await adapter.mkdir(toolkitDirRel);
-        let existing: object[] = [];
-        try {
-          const raw = await adapter.read(connectionsPath);
-          existing = JSON.parse(raw) as object[];
-        } catch {}
-        existing.push(entry);
-        await adapter.write(connectionsPath, JSON.stringify(existing, null, 2));
-      } catch (err) {
-        console.warn('[obsidian-toolkit] failed to update connections.json', err);
-      }
+    },
+    syncArtifacts(files) {
+      return syncArtifacts(files);
     },
   };
 
