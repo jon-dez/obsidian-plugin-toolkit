@@ -34,7 +34,7 @@ export interface DevServerStore {
   setServerUrl(url: string): void;
   reconnect(): void;
   listArtifacts(): Promise<string[]>;
-  syncArtifacts(files: string[]): Promise<void>;
+  syncArtifacts(files: string[]): Promise<boolean>;
 }
 
 function ConnectionStatus({ connected, paused }: { connected: boolean; paused: boolean }) {
@@ -114,7 +114,8 @@ export function DevelopmentModeUI({
       setConnected(true);
       const files = probe.files ?? await store.listArtifacts();
       if (files.length > 0) {
-        await store.syncArtifacts(files);
+        const changed = await store.syncArtifacts(files);
+        if (changed) connection.reloadPlugin();
       } else {
         console.log('[obsidian-toolkit] Connect: server reachable but no artifacts found');
       }
@@ -135,7 +136,8 @@ export function DevelopmentModeUI({
     try {
       const files = await store.listArtifacts();
       if (files.length > 0) {
-        await store.syncArtifacts(files);
+        const changed = await store.syncArtifacts(files);
+        if (changed) connection.reloadPlugin();
       } else {
         console.log('[obsidian-toolkit] Download latest: no artifacts found at server');
       }

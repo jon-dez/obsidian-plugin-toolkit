@@ -77,9 +77,9 @@ export async function listArtifacts(): Promise<string[]> {
   }
 }
 
-export async function syncArtifacts(files: string[]): Promise<void> {
+export async function syncArtifacts(files: string[]): Promise<boolean> {
   const manifestId = globalThis.__VITE_DEV__?.manifestId;
-  if (!manifestId) return;
+  if (!manifestId) return false;
 
   const serverUrl = getServerUrl();
   const adapter = globalThis.app.vault.adapter;
@@ -92,6 +92,7 @@ export async function syncArtifacts(files: string[]): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const snapshotDirRel = `${configDir}/.@obsidian-plugin-toolkit/vite/${manifestId}/snapshots/${timestamp}`;
   let snapshotDirCreated = false;
+  let anyChanged = false;
 
   for (const fileName of files) {
     const endpoint = `${serverUrl}${ARTIFACT_ENDPOINT_PREFIX}/${manifestId}/${fileName}`;
@@ -109,8 +110,9 @@ export async function syncArtifacts(files: string[]): Promise<void> {
     }
 
     const currentFilePath = `${pluginDirRel}/${fileName}`;
+    let current: string | undefined;
     try {
-      const current = await adapter.read(currentFilePath);
+      current = await adapter.read(currentFilePath);
       if (!snapshotDirCreated) {
         await adapter.mkdir(snapshotDirRel);
         snapshotDirCreated = true;
@@ -120,9 +122,15 @@ export async function syncArtifacts(files: string[]): Promise<void> {
       // File doesn't exist yet — no snapshot needed
     }
 
+    if (current === newContent) {
+      console.log(`[obsidian-toolkit] ${fileName} unchanged, skipping`);
+      continue;
+    }
+
     try {
       await adapter.write(currentFilePath, newContent);
       console.log(`[obsidian-toolkit] installed ${fileName}`);
+      anyChanged = true;
     } catch (err) {
       console.warn(`[obsidian-toolkit] failed to write ${fileName}`, err);
     }
@@ -143,6 +151,8 @@ export async function syncArtifacts(files: string[]): Promise<void> {
   } catch (err) {
     console.warn('[obsidian-toolkit] failed to update connections.json', err);
   }
+
+  return anyChanged;
 }
 
 export function stubDevStoreMethods(store: DevServerStore): void {

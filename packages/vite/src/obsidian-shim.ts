@@ -103,7 +103,7 @@ function createDevStore(plugin: Plugin): DevServerStore {
         });
       }
     },
-    async syncArtifacts(files) {
+    syncArtifacts(files) {
       return syncArtifacts(files);
     },
   };
