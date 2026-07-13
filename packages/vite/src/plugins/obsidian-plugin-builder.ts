@@ -31,6 +31,25 @@ export default function obsidianPluginBuilderPlugin(options: {
 }): Plugin {
   const { outDir, entryPoints, manifestPath } = options;
 
+  const assertSafeOutDir = (resolvedOut: string, root: string) => {
+    const prefix = resolvedOut.endsWith(path.sep)
+      ? resolvedOut
+      : resolvedOut + path.sep;
+    if (resolvedOut === root || root.startsWith(prefix)) {
+      throw new Error(
+        [
+          `Unsafe build.outDir detected: "${resolvedOut}"`,
+          `The outDir must not be the project root or its parent.`,
+          `Set outDir to a subdirectory such as "${path.join(
+            root,
+            'dist',
+            'development',
+          )}".`,
+        ].join(' '),
+      );
+    }
+  };
+
   const writeManifest = () => {
     const outPath = path.join(outDir, 'manifest.json');
     if (path.resolve(outPath) === path.resolve(manifestPath)) {
@@ -47,6 +66,9 @@ export default function obsidianPluginBuilderPlugin(options: {
 
   return {
     name: 'vite-plugin-obsidian-plugin-builder',
+    configResolved(config) {
+      assertSafeOutDir(path.resolve(config.root, config.build.outDir), config.root);
+    },
     config: (_) => {
       return {
         optimizeDeps: {

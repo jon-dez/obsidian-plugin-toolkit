@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "declarationMap": true,
     "declaration": true,
     "inlineSourceMap": true,
@@ -17,14 +16,17 @@
     "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@obsidian-plugin-toolkit/react": ["../../packages/react/src/index.ts"],
+      "@obsidian-plugin-toolkit/react/*": ["../../packages/react/src/*"],
+      "@obsidian-plugin-toolkit/vite": ["../../packages/vite/src/index.ts"],
+      "@obsidian-plugin-toolkit/vite/*": ["../../packages/vite/src/*"],
+      "@obsidian-plugin-toolkit/e2e": ["../../packages/e2e/src/index.ts"],
+      "@obsidian-plugin-toolkit/e2e/*": ["../../packages/e2e/src/*"],
+      "src/*": ["../../packages/react/src/*"]
+    }
   },
-  "include": ["src", "test", "vite.config.mts", "wdio.conf.mts"],
-  "references": [
-    { "path": "../../packages/react" },
-    { "path": "../../packages/vite" },
-    { "path": "../../packages/e2e"}
-  ]
+  "include": ["src", "test", "vite.config.mts", "wdio.conf.mts"]
 }

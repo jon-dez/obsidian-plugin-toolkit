@@ -52,9 +52,12 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "clean": "rm -rf dist"
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "esbuild": "*",
@@ -69,9 +72,10 @@
     "obsidian": "^1.11.4",
     "react": ">=18",
     "react-dom": ">=18",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0"
+    "tsdown": "^0.22.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.28.5"
