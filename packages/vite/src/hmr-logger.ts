@@ -35,6 +35,14 @@ function log(kind: string, detail?: string) {
 }
 
 if (hot) {
+  hot.on('vite:ws:connect', ({ webSocket }: { webSocket: WebSocket }) => {
+    globalThis.__VITE_DEV__.ws = webSocket;
+  });
+
+  hot.on('vite:ws:disconnect', () => {
+    globalThis.__VITE_DEV__.ws = undefined;
+  });
+
   hot.on('vite:beforeUpdate', (payload: any) => {
     try {
       const modules = Array.isArray(payload?.updates)

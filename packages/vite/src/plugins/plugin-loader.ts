@@ -41,6 +41,14 @@ export function vitePluginLoaderPlugin(
         const prefix = `${metaEndpoint}/`;
         const url = (req.url ?? '').split('?')[0];
 
+        // Discovery endpoint: lists the plugin and its files without needing to know the plugin ID
+        if (url === ARTIFACT_ENDPOINT_PREFIX || url === `${ARTIFACT_ENDPOINT_PREFIX}/`) {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(JSON.stringify({ manifestId, files: listOutDirFiles(outDir) }));
+          return;
+        }
+
         // Metadata endpoint: lists files currently in outDir
         if (url === metaEndpoint || url === `${metaEndpoint}/`) {
           res.setHeader('Content-Type', 'application/json');
