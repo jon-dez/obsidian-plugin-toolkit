@@ -16,6 +16,9 @@ export type LaunchObsidianForCdpOptions = {
   cdpHost?: string;
   /** How long to wait for the CDP port to become available. Default `60000` ms. */
   timeoutMs?: number;
+  /** Extra Electron/Chromium flags appended after `--remote-debugging-port`. */
+  args?: string[];
+  verbose?: boolean;
 };
 
 export type ObsidianCdpSession = {
@@ -49,17 +52,28 @@ export async function launchObsidianForCdp(
     cdpPort = 9333,
     cdpHost = '127.0.0.1',
     timeoutMs = 60000,
+    args = [],
+    verbose = false,
   } = options ?? {};
 
   const launcher = new ObsidianLauncher();
+
   const { proc } = await launcher.launch({
     vault,
     plugins,
     themes,
     appVersion,
     installerVersion,
-    args: [`--remote-debugging-port=${cdpPort}`],
+    args: [
+      `--remote-debugging-port=${cdpPort}`,
+      ...(process.env.OBSIDIAN_LAUNCHER_ARGS ?? '').split(' ').filter(Boolean),
+      ...args,
+    ],
   });
+
+  if (verbose) {
+    console.log(`Obsidian launched with PID ${proc.pid}`, { args: proc.spawnargs });
+  }
 
   await waitForPort(cdpPort, cdpHost, timeoutMs);
 
