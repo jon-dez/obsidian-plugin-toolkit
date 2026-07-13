@@ -2,7 +2,6 @@ import { expect } from "@wdio/globals";
 import {
   Obsidian,
   createObsidianTest,
-  isE2eInteractivePauseEnabled,
   pauseE2eForTerminal,
   type ObsidianTest,
 } from "@obsidian-plugin-toolkit/e2e";
@@ -129,7 +128,7 @@ describe("Demo plugin E2E", function () {
   });
 
   it("supports manual pause and confirmation", async function () {
-    if (!isE2eInteractivePauseEnabled()) {
+    if (process.env.INTERACTIVE !== 'true') {
       this.skip();
       return;
     }
