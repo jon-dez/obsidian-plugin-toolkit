@@ -16,15 +16,18 @@
     "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["node"],
+    "types": ["node", "mocha"],
     "paths": {
       "@obsidian-plugin-toolkit/react": ["../../packages/react/src/index.ts"],
       "@obsidian-plugin-toolkit/react/*": ["../../packages/react/src/*"],
       "@obsidian-plugin-toolkit/vite": ["../../packages/vite/src/index.ts"],
       "@obsidian-plugin-toolkit/vite/*": ["../../packages/vite/src/*"],
+      "@obsidian-plugin-toolkit/e2e": ["../../packages/e2e/src/index.ts"],
+      "@obsidian-plugin-toolkit/e2e/*": ["../../packages/e2e/src/*"],
       "src/*": ["../../packages/react/src/*"]
     }
   },
-  "include": ["src", "vite.config.mts"]
+  "include": ["src", "test", "vite.config.mts", "wdio.conf.mts"]
 }

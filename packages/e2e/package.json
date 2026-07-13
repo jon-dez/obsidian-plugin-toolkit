@@ -1,0 +1,92 @@
+{
+  "name": "@obsidian-plugin-toolkit/e2e",
+  "version": "0.1.0",
+  "description": "E2E helpers for Obsidian plugin tests (wdio-obsidian-service)",
+  "license": "MIT",
+  "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
+  "homepage": "https://github.com/jon-dez/obsidian-plugin-toolkit/tree/main/packages/e2e#readme",
+  "funding": "https://github.com/sponsors/jon-dez",
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "e2e",
+    "webdriverio",
+    "wdio-obsidian-service"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jon-dez/obsidian-plugin-toolkit.git",
+    "directory": "packages/e2e"
+  },
+  "bugs": {
+    "url": "https://github.com/jon-dez/obsidian-plugin-toolkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "bin": {
+    "obsidian-cdp-util": "./dist/cdp-util.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./cdp": {
+      "types": "./dist/cdp.d.ts",
+      "import": "./dist/cdp.js",
+      "require": "./dist/cdp.js",
+      "default": "./dist/cdp.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "cdp-util": "tsx scripts/cdp-util.mts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "peerDependencies": {
+    "@wdio/devtools-service": ">=10",
+    "@wdio/globals": ">=9",
+    "obsidian-launcher": ">=2",
+    "wdio-obsidian-service": ">=2",
+    "webdriverio": ">=9"
+  },
+  "peerDependenciesMeta": {
+    "@wdio/devtools-service": {
+      "optional": true
+    },
+    "obsidian-launcher": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "@wdio/devtools-service": "^10.3.1",
+    "@wdio/globals": "^9.27.0",
+    "@wdio/types": "^9.27.0",
+    "expect-webdriverio": "^5.6.5",
+    "obsidian": "^1.11.4",
+    "tsdown": "^0.22.5",
+    "tsx": "^4.21.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.9",
+    "wdio-obsidian-service": "^3.0.2",
+    "webdriverio": "^9.27.0"
+  }
+}

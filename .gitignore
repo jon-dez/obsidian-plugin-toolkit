@@ -2,3 +2,7 @@
 node_modules/
 dist/
 *.tsbuildinfo
+test-output/
+**/wdio-video-*.webm
+**/wdio-trace-*.json
+.obsidian-cache/
