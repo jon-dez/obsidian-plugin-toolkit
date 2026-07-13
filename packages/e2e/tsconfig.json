@@ -10,7 +10,6 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "composite": true,
-    "baseUrl": ".",
     "rootDir": "src",
     "outDir": "dist",
     "types": ["node", "@wdio/globals/types", "wdio-obsidian-service"]
