@@ -1,10 +1,9 @@
 import { expect } from "@wdio/globals";
 import {
-  copyObsidianUrlForVaultFile,
+  Obsidian,
   createObsidianTest,
   isE2eInteractivePauseEnabled,
   pauseE2eForTerminal,
-  readClipboardObsidianUrl,
   type ObsidianTest,
 } from "@obsidian-plugin-toolkit/e2e";
 
@@ -119,11 +118,11 @@ describe("Demo plugin E2E", function () {
   });
 
   it("copies an Obsidian URL for a vault file via Obsidian UI", async function () {
-    for await (const { action, browser } of copyObsidianUrlForVaultFile("Welcome.md")) {
+    for await (const { action, browser } of Obsidian.Vault.Macros.copyObsidianUrlForVaultFile("Welcome.md")) {
       if (action === 'right-click') await browser.pause(300);
       else if (action === 'hover-copy-path') await browser.pause(400);
     }
-    const url = await readClipboardObsidianUrl("Welcome.md");
+    const url = await Obsidian.Vault.Actions.readClipboardObsidianUrl("Welcome.md");
     expect(url).toMatch(/^obsidian:\/\//);
     const fileParam = new URL(url).searchParams.get("file");
     expect(fileParam === "Welcome.md" || fileParam === "Welcome").toBe(true);

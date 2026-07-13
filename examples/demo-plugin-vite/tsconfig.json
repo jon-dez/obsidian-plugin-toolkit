@@ -16,8 +16,9 @@
     "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["node"],
+    "types": ["node", "mocha"],
     "paths": {
       "@obsidian-plugin-toolkit/react": ["../../packages/react/src/index.ts"],
       "@obsidian-plugin-toolkit/react/*": ["../../packages/react/src/*"],

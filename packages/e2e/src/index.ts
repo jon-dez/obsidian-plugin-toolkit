@@ -31,12 +31,4 @@ export {
   type PauseE2eForTerminalOptions,
 } from './pause';
 export { menuItem, obsidianSel } from './obsidian/selectors';
-export {
-  clickContextMenuItem,
-  copyObsidianUrlForVaultFile,
-  type CopyObsidianUrlStep,
-  dumpMenuItems,
-  hoverContextMenuItem,
-  readClipboardObsidianUrl,
-  rightClickNavFile,
-} from './obsidian/vault';
+export * as Obsidian from './obsidian';
