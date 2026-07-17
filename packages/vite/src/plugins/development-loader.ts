@@ -148,7 +148,7 @@ export function developmentLoaderPlugin(
       };
     },
     configureServer(server) {
-      const onListening = () => {
+      server.httpServer?.on('listening', () => {
         lastServerUrl = getServerUrlFromUrls(server.resolvedUrls);
         writeLoader(server.resolvedUrls).then(() => {
           console.log(
@@ -158,18 +158,9 @@ export function developmentLoaderPlugin(
             lastServerUrl + ')',
           );
         });
-      };
+      });
 
-      server.httpServer?.on('listening', onListening);
-
-      return async () => {
-        await writeLoader(server.resolvedUrls);
-        console.log(
-          'Obsidian dev loader written to',
-          outDir,
-          '(point vault at it for HMR)',
-        );
-
+      return () => {
         if (watchShim) {
           const resolvedShim = path.resolve(shimPath);
           server.watcher.add(resolvedShim);
