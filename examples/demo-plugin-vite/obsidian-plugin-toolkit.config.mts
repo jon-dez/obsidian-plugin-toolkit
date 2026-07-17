@@ -1,8 +1,7 @@
-import type { ConfigEnv } from 'vite';
-import type { ViteObsidianPluginOptions } from '@obsidian-plugin-toolkit/vite';
+import { defineConfig } from '@obsidian-plugin-toolkit/vite/config';
 import path from 'path';
 
-export default function obsidianPTKConfig({ command }: ConfigEnv): ViteObsidianPluginOptions {
+export default defineConfig(({ command }) => {
   const dirname = import.meta.dirname;
   const prod = command === 'build';
   return {
@@ -12,4 +11,4 @@ export default function obsidianPTKConfig({ command }: ConfigEnv): ViteObsidianP
       ? path.resolve(dirname, 'dist', 'production')
       : path.resolve(dirname, 'dist', 'development'),
   };
-}
+});

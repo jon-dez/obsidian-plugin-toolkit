@@ -38,6 +38,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
     "./dev/obsidian-shim": {
       "types": "./dist/dev/obsidian-shim.d.ts",
       "import": "./dist/dev/obsidian-shim.js"

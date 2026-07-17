@@ -7,10 +7,11 @@ import { createViteObsidianPlugin } from './create';
 import type { ViteObsidianPluginOptions } from './types';
 
 export { createViteObsidianPlugin } from './create';
+export { defineConfig } from './config';
 export type { ViteObsidianPluginOptions };
 
 const knownObsidianPTKConfigNames = ['mts', 'cts', 'ts', 'js', 'mjs', 'cjs'].map(
-  (ext) => `obsidian-ptk.config.${ext}`,
+  (ext) => `obsidian-plugin-toolkit.config.${ext}`,
 );
 
 type Config = Partial<ViteObsidianPluginOptions> & {
@@ -46,7 +47,7 @@ function findObsidianPTKConfigPath(root: string, configPath?: string | false): s
 
   if (existing.length > 1) {
     console.warn(
-      `[obsidian-plugin-toolkit] Multiple obsidian-ptk config files found; using ${existing[0]}.`,
+      `[obsidian-plugin-toolkit] Multiple obsidian-plugin-toolkit config files found; using ${existing[0]}.`,
     );
   }
 
@@ -54,9 +55,11 @@ function findObsidianPTKConfigPath(root: string, configPath?: string | false): s
 }
 
 /**
- * - read `obsidian-ptk.config.(mts|cts|js|ts|mjs|cjs)` (probes project root)
+ * Reads `obsidian-plugin-toolkit.config.*` from the project root, merges it
+ * with any inline `config` options (inline takes precedence), and returns an
+ * array of Vite plugins via {@link createViteObsidianPlugin}.
  *
- * - return `createViteObsidianPlugin`
+ * Pass `configPath: false` to skip config file loading entirely.
  */
 export default async function viteObsidian(config: Config = {}) {
   const {
