@@ -89,13 +89,14 @@ let hasWarnedDeprecatedDevelopmentOption = false;
 /**
  * Returns Vite plugins for Obsidian plugin development with support for React Fast Refresh.
  *
- * NOTE: @vitejs/plugin-react is not included in the plugins returned by this function. You must add it yourself.
+ * NOTE: `@vitejs/plugin-react` is not included — add it yourself before this plugin.
  *
- * By default:
- * - The plugin will be configured with support for HMR. You can disable this by setting `development` to `false`.
+ * In dev mode the plugins write a CJS development loader (`main.js`) to `outDir`,
+ * serve built artifacts over HTTP, and notify connected Obsidian clients via HMR.
+ * Pass `loader: false` to disable the development loader.
  *
- * @param options - The options for the Vite Obsidian plugin.
- * @returns The Vite plugins.
+ * @param options - Plugin options. Prefer loading these from `obsidian-plugin-toolkit.config.*`
+ *   via the default export rather than calling this directly.
  */
 export function createViteObsidianPlugin(
   options: Partial<ViteObsidianPluginOptions> = {},

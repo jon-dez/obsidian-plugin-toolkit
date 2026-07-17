@@ -19,11 +19,14 @@ function listOutDirFiles(outDir: string): string[] {
 
 /**
  * Vite plugin that serves built plugin artifacts over HTTP and notifies connected
- * Obsidian clients via HMR when they change. Clients download and install
- * the new files automatically.
+ * Obsidian clients via HMR when they change. Clients download, install, and
+ * reload the plugin automatically when the content differs from what's on disk.
  *
- * Artifacts served at: `GET /~obsidian-toolkit/dist/<plugin-id>/<filename>`
- * HMR event emitted:   `obsidian-toolkit:artifacts-updated`
+ * Endpoints:
+ *   `GET /~obsidian-toolkit/dist`                        — discovery (returns manifestId + file list)
+ *   `GET /~obsidian-toolkit/dist/<plugin-id>`            — file list for a known plugin
+ *   `GET /~obsidian-toolkit/dist/<plugin-id>/<filename>` — file download
+ * HMR event: `obsidian-toolkit:artifacts-updated`
  */
 export function vitePluginLoaderPlugin(
   options: Pick<DevelopmentLoaderOptions, 'outDir' | 'manifestPath'>,

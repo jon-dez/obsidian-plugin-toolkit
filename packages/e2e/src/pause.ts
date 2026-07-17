@@ -4,13 +4,12 @@ import { DEFAULT_CDP } from './config';
 // ── pauseE2eForTerminal ───────────────────────────────────────────────────────
 
 export type PauseE2eForTerminalOptions = {
-  /** Override config `interactive.pauseOnEnter` */
   enabled?: boolean;
 };
 
 /**
  * Blocks until the user presses Enter in the terminal.
- * No-op unless `interactive.pauseOnEnter` is set in `configureE2e()` (or `enabled: true` is passed).
+ * Skips with a warning if stdin is not a TTY.
  */
 export async function pauseE2eForTerminal(
   message = '[e2e] Press Enter in this terminal to continue the test...',
@@ -39,13 +38,11 @@ export type PauseE2eForDebugOptions = {
 };
 
 /**
- * Pause for interactive debugging. Priority:
- * 1. `wdioDebug` → `browser.debug()` (WDIO REPL; Obsidian stays open)
- * 2. `pauseOnEnter` → wait for Enter in terminal
- * 3. otherwise no-op
+ * Pause for interactive debugging via the WDIO REPL (`browser.debug()`).
+ * Obsidian stays open until the REPL is exited.
  */
 export async function pauseE2eForDebug(
-  message = '[e2e] Press Enter to continue, or enable interactive.wdioDebug in configureE2e()…',
+  message = '[e2e] Entering WDIO debug REPL — type .exit to continue…',
   options?: PauseE2eForDebugOptions,
 ): Promise<void> {
   const b = options?.browser ?? (globalThis as { browser?: WebdriverIO.Browser }).browser;
@@ -58,9 +55,8 @@ export async function pauseE2eForDebug(
 
 /**
  * Block until Enter so Obsidian stays open for CDP / chrome://inspect.
- * Requires `interactive.pauseOnEnter` in `defineE2eConfig()`.
- * @param browser - Falls back to the WDIO runner global when omitted. Only
- *   needed when `interactive.wdioDebug` is true.
+ * Logs the CDP port and instructions for attaching Chrome DevTools.
+ * @param browser - Browser instance. Falls back to the WDIO runner global when omitted.
  */
 export async function holdObsidianForCdp(cdpPort?: number, browser?: WebdriverIO.Browser): Promise<void> {
   const port = cdpPort ?? DEFAULT_CDP.port;
