@@ -38,6 +38,7 @@
     "./dist/chunk-*"
   ],
   "scripts": {
+    "prepack": "yarn build",
     "build": "tsdown",
     "build:watch": "tsdown --watch",
     "typecheck": "tsc --noEmit",
