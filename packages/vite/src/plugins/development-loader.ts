@@ -1,9 +1,10 @@
 import path from 'path';
-import { mkdirSync, readFileSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin, ResolvedServerUrls } from 'vite';
 import { build } from 'vite';
 import type { DevelopmentLoaderOptions } from '../types';
+import { bundleCssEntries, splitEntryPoints } from './bundle-css';
 import { DEFAULT_SERVER_URL, getServerUrlFromUrls, readManifestId } from './shared';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,25 +72,14 @@ async function writeDevelopmentLoader(
   // Bundle any CSS entrypoints into a single stylesheet in the outdir so
   // Obsidian can load them directly. This allows `src/styles.css` to import
   // other CSS files while still producing a single `styles.css` output.
-  const cssEntries = entryPoints.filter((entry) =>
-    entry.toLowerCase().endsWith('.css'),
-  );
+  const { cssEntries } = splitEntryPoints(entryPoints);
 
   if (cssEntries.length > 0) {
     try {
-      await build({
-        configFile: false,
+      await bundleCssEntries({
         root: projectRoot,
-        build: {
-          outDir,
-          emptyOutDir: false,
-          rollupOptions: {
-            input: cssEntries,
-            output: {
-              assetFileNames: 'styles.css',
-            },
-          },
-        },
+        outDir,
+        cssEntries,
       });
     } catch (error) {
       console.warn(
@@ -158,7 +148,7 @@ export function developmentLoaderPlugin(
       };
     },
     configureServer(server) {
-      const onListening = () => {
+      server.httpServer?.on('listening', () => {
         lastServerUrl = getServerUrlFromUrls(server.resolvedUrls);
         writeLoader(server.resolvedUrls).then(() => {
           console.log(
@@ -168,18 +158,9 @@ export function developmentLoaderPlugin(
             lastServerUrl + ')',
           );
         });
-      };
+      });
 
-      server.httpServer?.on('listening', onListening);
-
-      return async () => {
-        await writeLoader(server.resolvedUrls);
-        console.log(
-          'Obsidian dev loader written to',
-          outDir,
-          '(point vault at it for HMR)',
-        );
-
+      return () => {
         if (watchShim) {
           const resolvedShim = path.resolve(shimPath);
           server.watcher.add(resolvedShim);
