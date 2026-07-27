@@ -6,6 +6,7 @@ const prod = process.env.NODE_ENV === 'production';
 export default defineConfig({
   entry: {
     index: 'src/index.ts',
+    config: 'src/config.ts',
     'dev/ui': 'src/ui.tsx',
     'dev/obsidian-shim': 'src/obsidian-shim.ts',
     'dev/hmr-logger': 'src/hmr-logger.ts',
