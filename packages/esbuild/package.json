@@ -32,6 +32,7 @@
     }
   },
   "scripts": {
+    "prepack": "yarn build",
     "build": "tsup",
     "build:watch": "tsup --watch",
     "clean": "rm -rf dist"

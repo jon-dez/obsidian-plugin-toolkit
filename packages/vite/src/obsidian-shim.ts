@@ -11,9 +11,11 @@
 import * as obsidian from 'obsidian';
 import type { DevLogEntry, DevServerStore } from './ui';
 import { virtual } from './const/plugins';
+import { listArtifacts, syncArtifacts } from './dev-store-compat';
 export * from 'obsidian';
 
 const devComponentClass = 'vite-obsidian-dev-component';
+
 
 function initViteDev() {
   const viteDev = __VITE_DEV__;
@@ -25,7 +27,7 @@ const viteDev = initViteDev();
 
 function createDevStore(plugin: Plugin): DevServerStore {
   const server = viteDev.server;
-  const url = new URL(server);
+  let url = new URL(server);
   const listeners = new Set<() => void>();
   let state: ReturnType<DevServerStore['getServer']> = {
     url,
@@ -34,6 +36,8 @@ function createDevStore(plugin: Plugin): DevServerStore {
     mode: viteDev.mode,
     outDir: viteDev.outDir,
     nodeVersion: viteDev.nodeVersion,
+    manifestId: viteDev.manifestId,
+    vaultRoot: viteDev.vaultRoot,
     logs: [],
     reloadPlugin() {
       const { app, manifest } = plugin;
@@ -56,7 +60,7 @@ function createDevStore(plugin: Plugin): DevServerStore {
     notify();
   };
 
-  return {
+  const store: DevServerStore = {
     getServer: () => state,
     subscribe(cb: () => void) {
       listeners.add(cb);
@@ -77,7 +81,34 @@ function createDevStore(plugin: Plugin): DevServerStore {
         logs: nextLogs.slice(-maxLogs),
       });
     },
+    async listArtifacts() {
+      return listArtifacts();
+    },
+    setServerUrl(urlStr) {
+      try {
+        url = new URL(urlStr);
+        update({ url });
+      } catch {
+        // Invalid URL — ignore
+      }
+    },
+    reconnect() {
+      const ws = globalThis.__VITE_DEV__?.ws;
+      if (ws) {
+        ws.close();
+      } else {
+        const { app, manifest } = plugin;
+        app.plugins.disablePlugin(manifest.id).then(() => {
+          app.plugins.enablePlugin(manifest.id);
+        });
+      }
+    },
+    syncArtifacts(files) {
+      return syncArtifacts(files);
+    },
   };
+
+  return store;
 }
 
 export class Plugin extends obsidian.Plugin {
@@ -134,6 +165,15 @@ class DevPlugin extends obsidian.Plugin {
     }
 
     viteDev.store ??= createDevStore(plugin);
+
+    try {
+      await import(
+        /* @vite-ignore */ new URL(virtual.pluginLoaderClient, url).toString()
+      );
+    } catch (error) {
+      console.warn('Failed to load Vite plugin loader client from dev server.', error);
+    }
+
     globalThis.__obsidian__ = { ...obsidian, Plugin };
 
     const entryUrl = new URL(`${devEntryPath}?t=${Date.now()}`, url).toString();
@@ -254,7 +294,7 @@ class DevModeUI {
           container: HTMLElement;
           store: DevServerStore;
           settingTab: obsidian.PluginSettingTab;
-        }) => () => void = (mod as any).mountDevUi ?? (mod as any).default;
+        }) => () => void = mod.mountDevUi ?? mod.default;
 
         if (typeof mountDevUi === 'function') {
           this.#unmount = mountDevUi({

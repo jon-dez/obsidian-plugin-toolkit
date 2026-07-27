@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node", "@wdio/globals/types", "wdio-obsidian-service"]
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "src/**/*.unit.test.ts", "src/**/*.e2e.test.ts"]
+}

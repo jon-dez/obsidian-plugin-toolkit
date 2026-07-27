@@ -1,6 +1,6 @@
 {
   "name": "@obsidian-plugin-toolkit/vite",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vite plugins and utilities for Obsidian plugins with React Fast Refresh",
   "license": "MIT",
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
@@ -38,6 +38,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
     "./dev/obsidian-shim": {
       "types": "./dist/dev/obsidian-shim.d.ts",
       "import": "./dist/dev/obsidian-shim.js"
@@ -52,9 +56,13 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "clean": "rm -rf dist"
+    "prepack": "yarn build",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "esbuild": "*",
@@ -69,9 +77,10 @@
     "obsidian": "^1.11.4",
     "react": ">=18",
     "react-dom": ">=18",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0"
+    "tsdown": "^0.22.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.28.5"

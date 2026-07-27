@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 import banner from '../../common/banner.mjs';
 
 const prod = process.env.NODE_ENV === 'production';
@@ -12,18 +12,17 @@ export default defineConfig({
     'utils/index': 'src/utils/index.ts',
   },
   format: ['esm'],
-  dts: {
-    compilerOptions: {
-      // https://github.com/egoist/tsup/issues/647#issuecomment-3089761334
-      composite: false,
-    },
-  },
+  dts: true,
   clean: true,
   sourcemap: !prod,
   target: 'es2022',
   minify: prod,
+  // Match package.json type:module exports (.js / .d.ts), not Node's fixed .mjs.
+  fixedExtension: false,
   // The plugin using our library will provide these.
-  external: ['obsidian', 'react', 'react-dom'],
+  deps: {
+    neverBundle: ['obsidian', 'react', 'react-dom'],
+  },
   banner: {
     js: banner,
   },

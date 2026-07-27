@@ -4,17 +4,24 @@ import { fileURLToPath } from 'node:url';
 import type { Plugin, ResolvedServerUrls } from 'vite';
 import { build } from 'vite';
 import type { DevelopmentLoaderOptions } from '../types';
+import { bundleCssEntries, splitEntryPoints } from './bundle-css';
+import { DEFAULT_SERVER_URL, getServerUrlFromUrls, readManifestId } from './shared';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // In the published package, the shim is built as ESM at dist/hmr/obsidian-shim.js.
 // We bundle that with Vite into a CJS dev loader for Obsidian.
 const defaultShimPath = path.resolve(__dirname, 'dev', 'obsidian-shim.js');
 
-const DEFAULT_SERVER_URL = 'http://localhost:5173';
-
-function getServerUrlFromUrls(resolvedUrls: ResolvedServerUrls | null): string {
-  if (!resolvedUrls) return DEFAULT_SERVER_URL;
-  return resolvedUrls.local?.[0] ?? resolvedUrls.network?.[0] ?? DEFAULT_SERVER_URL;
+/**
+ * Derives vault root from outDir when outDir is inside `.obsidian/plugins/`.
+ * Falls back to `fallback` if the pattern is not found.
+ */
+function deriveVaultRoot(outDir: string, fallback: string): string {
+  const normalized = path.resolve(outDir).replace(/\\/g, '/');
+  const idx = normalized.indexOf('/.obsidian/plugins/');
+  if (idx !== -1) return normalized.slice(0, idx);
+  return fallback;
 }
 
 async function writeDevelopmentLoader(
@@ -23,6 +30,8 @@ async function writeDevelopmentLoader(
   shimPath: string,
   projectRoot: string,
   entryPoints: string[],
+  manifestPath: string,
+  vaultRoot: string,
 ): Promise<void> {
   mkdirSync(outDir, { recursive: true });
 
@@ -37,6 +46,8 @@ async function writeDevelopmentLoader(
         mode: process.env.NODE_ENV ?? 'development',
         outDir,
         nodeVersion: process.version,
+        manifestId: readManifestId(manifestPath),
+        vaultRoot,
       },
     },
     build: {
@@ -61,25 +72,14 @@ async function writeDevelopmentLoader(
   // Bundle any CSS entrypoints into a single stylesheet in the outdir so
   // Obsidian can load them directly. This allows `src/styles.css` to import
   // other CSS files while still producing a single `styles.css` output.
-  const cssEntries = entryPoints.filter((entry) =>
-    entry.toLowerCase().endsWith('.css'),
-  );
+  const { cssEntries } = splitEntryPoints(entryPoints);
 
   if (cssEntries.length > 0) {
     try {
-      await build({
-        configFile: false,
+      await bundleCssEntries({
         root: projectRoot,
-        build: {
-          outDir,
-          emptyOutDir: false,
-          rollupOptions: {
-            input: cssEntries,
-            output: {
-              assetFileNames: 'styles.css',
-            },
-          },
-        },
+        outDir,
+        cssEntries,
       });
     } catch (error) {
       console.warn(
@@ -93,12 +93,9 @@ async function writeDevelopmentLoader(
 }
 
 /**
- * Vite plugin that writes the Obsidian development loader (CJS main.js from obsidian-shim.ts)
- * and copies the manifest. In dev, runs when the server is ready and optionally watches the shim.
- * 
- * Defaults:
- * - root: process.cwd()
- *  
+ * Vite plugin that writes the Obsidian development loader (CJS `main.js` bundled from
+ * `obsidian-shim.ts`) into `outDir` when the dev server starts listening.
+ * Optionally watches the shim and rebuilds on change.
  */
 export function developmentLoaderPlugin(
   options: DevelopmentLoaderOptions,
@@ -111,6 +108,8 @@ export function developmentLoaderPlugin(
     watchShim = true,
   } = options;
 
+  const vaultRoot = options.vaultRoot ?? deriveVaultRoot(outDir, root);
+
   const writeLoader = (resolvedUrls: ResolvedServerUrls | null) =>
     writeDevelopmentLoader(
       outDir,
@@ -118,6 +117,8 @@ export function developmentLoaderPlugin(
       shimPath,
       root,
       entryPoints,
+      options.manifestPath,
+      vaultRoot,
     );
 
   let lastServerUrl = DEFAULT_SERVER_URL;
@@ -145,7 +146,7 @@ export function developmentLoaderPlugin(
       };
     },
     configureServer(server) {
-      const onListening = () => {
+      server.httpServer?.on('listening', () => {
         lastServerUrl = getServerUrlFromUrls(server.resolvedUrls);
         writeLoader(server.resolvedUrls).then(() => {
           console.log(
@@ -155,18 +156,9 @@ export function developmentLoaderPlugin(
             lastServerUrl + ')',
           );
         });
-      };
+      });
 
-      server.httpServer?.on('listening', onListening);
-
-      return async () => {
-        await writeLoader(server.resolvedUrls);
-        console.log(
-          'Obsidian dev loader written to',
-          outDir,
-          '(point vault at it for HMR)',
-        );
-
+      return () => {
         if (watchShim) {
           const resolvedShim = path.resolve(shimPath);
           server.watcher.add(resolvedShim);
