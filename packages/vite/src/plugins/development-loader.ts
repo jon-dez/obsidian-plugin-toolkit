@@ -93,11 +93,9 @@ async function writeDevelopmentLoader(
 }
 
 /**
- * Vite plugin that writes the Obsidian development loader (CJS main.js from obsidian-shim.ts)
- * and copies the manifest. In dev, runs when the server is ready and optionally watches the shim.
- *
- * Defaults:
- * - root: process.cwd()
+ * Vite plugin that writes the Obsidian development loader (CJS `main.js` bundled from
+ * `obsidian-shim.ts`) into `outDir` when the dev server starts listening.
+ * Optionally watches the shim and rebuilds on change.
  */
 export function developmentLoaderPlugin(
   options: DevelopmentLoaderOptions,
