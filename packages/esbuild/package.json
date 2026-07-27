@@ -1,6 +1,6 @@
 {
   "name": "@obsidian-plugin-toolkit/esbuild",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Esbuild plugins and utilities for Obsidian plugins",
   "license": "MIT",
   "author": "Jonathan Mendez <dev@jon-dez.com> (https://github.com/jon-dez)",
@@ -39,8 +39,8 @@
   },
   "peerDependencies": {
     "esbuild": "^0.27.2",
-    "react": "18",
-    "react-dom": "18"
+    "react": "^18.3.1 || ^19.0.0",
+    "react-dom": "^18.3.1 || ^19.0.0"
   },
   "devDependencies": {
     "@obsidian-plugin-toolkit/react": "workspace:^",
